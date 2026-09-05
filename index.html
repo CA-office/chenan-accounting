@@ -634,7 +634,7 @@ function money(value){
 }
 
 
-async function login() {
+window.login = async function () {
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
 
@@ -655,7 +655,8 @@ async function login() {
 
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
-}
+};
+
 </script>
 </body>
 </html>

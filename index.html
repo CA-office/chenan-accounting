@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>晨安企業｜內帳管理系統</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      font-family:
+        -apple-system,BlinkMacSystemFont,
+        "Segoe UI","Microsoft JhengHei",sans-serif;
+      background:#f4f6f8;
+      color:#263238;
+    }
+
+    header{
+      background:linear-gradient(135deg,#263238,#455a64);
+      color:white;
+      padding:22px;
+      text-align:center;
+    }
+
+    header h1{
+      margin:0;
+      font-size:26px;
+    }
+
+    header p{
+      margin:6px 0 0;
+      opacity:.8;
+    }
+
+    .container{
+      max-width:1100px;
+      margin:auto;
+      padding:18px;
+    }
+
+    .card{
+      background:white;
+      border-radius:18px;
+      padding:20px;
+      margin-bottom:18px;
+      box-shadow:0 5px 20px rgba(0,0,0,.07);
+    }
+
+    input,select,textarea,button{
+      width:100%;
+      padding:12px;
+      margin:6px 0;
+      border-radius:10px;
+      border:1px solid #d5dadd;
+      font-size:16px;
+    }
+
+    textarea{
+      min-height:80px;
+    }
+
+    button{
+      border:0;
+      background:#37474f;
+      color:white;
+      cursor:pointer;
+      font-weight:600;
+    }
+
+    button:hover{
+      opacity:.9;
+    }
+
+    .btn-danger{
+      background:#b71c1c;
+    }
+
+    .btn-green{
+      background:#2e7d32;
+    }
+
+    .tabs{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:8px;
+      margin-bottom:16px;
+    }
+
+    .tabs button{
+      margin:0;
+      background:white;
+      color:#37474f;
+      border:1px solid #cfd8dc;
+    }
+
+    .tabs button.active{
+      background:#37474f;
+      color:white;
+    }
+
+    .section{
+      display:none;
+    }
+
+    .section.active{
+      display:block;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+    }
+
+    .summary{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+    }
+
+    .summary-box{
+      padding:18px;
+      border-radius:14px;
+      background:#eceff1;
+      text-align:center;
+    }
+
+    .summary-box strong{
+      display:block;
+      font-size:22px;
+      margin-top:5px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:15px;
+      font-size:14px;
+    }
+
+    th,td{
+      border-bottom:1px solid #eceff1;
+      padding:10px;
+      text-align:left;
+    }
+
+    th{
+      background:#f5f7f8;
+    }
+
+    .table-wrap{
+      overflow-x:auto;
+    }
+
+    #loginScreen{
+      max-width:430px;
+      margin:60px auto;
+    }
+
+    #app{
+      display:none;
+    }
+
+    .logout{
+      max-width:150px;
+      margin-left:auto;
+      background:#546e7a;
+    }
+
+    .message{
+      text-align:center;
+      padding:10px;
+      min-height:30px;
+    }
+
+    @media(max-width:700px){
+      .grid,
+      .summary{
+        grid-template-columns:1fr;
+      }
+
+      .tabs{
+        grid-template-columns:repeat(2,1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>晨安企業</h1>
+  <p>內帳・薪資・報價管理系統</p>
+</header>
+
+<div id="loginScreen" class="container">
+  <div class="card">
+    <h2>管理員登入</h2>
+
+    <input
+      id="loginEmail"
+      type="email"
+      placeholder="Email"
+    >
+
+    <input
+      id="loginPassword"
+      type="password"
+      placeholder="密碼"
+    >
+
+    <button onclick="login()">登入</button>
+
+    <div id="loginMessage" class="message"></div>
+  </div>
+</div>
+
+
+<div id="app" class="container">
+
+  <button class="logout" onclick="logout()">登出</button>
+
+  <div class="summary">
+    <div class="summary-box">
+      本月收入
+      <strong id="totalIncome">$0</strong>
+    </div>
+
+    <div class="summary-box">
+      本月支出
+      <strong id="totalExpense">$0</strong>
+    </div>
+
+    <div class="summary-box">
+      本月損益
+      <strong id="profit">$0</strong>
+    </div>
+  </div>
+
+  <br>
+
+  <div class="tabs">
+    <button class="active" onclick="showTab('transactions',this)">
+      收支帳
+    </button>
+
+    <button onclick="showTab('employees',this)">
+      員工
+    </button>
+
+    <button onclick="showTab('salaries',this)">
+      薪資
+    </button>
+
+    <button onclick="showTab('quotations',this)">
+      報價單
+    </button>
+  </div>
+
+
+  <!-- 收支帳 -->
+  <section id="transactions" class="section active">
+
+    <div class="card">
+
+      <h2>新增收入／支出</h2>
+
+      <div class="grid">
+
+        <input id="tDate" type="date">
+
+        <select id="tType">
+          <option value="收入">收入</option>
+          <option value="支出">支出</option>
+        </select>
+
+        <input
+          id="tCategory"
+          placeholder="類別，例如：銷貨收入、材料費"
+        >
+
+        <input
+          id="tDescription"
+          placeholder="內容說明"
+        >
+
+        <input
+          id="tAmount"
+          type="number"
+          placeholder="金額"
+        >
+
+        <select id="tPayment">
+          <option value="現金">現金</option>
+          <option value="銀行轉帳">銀行轉帳</option>
+          <option value="支票">支票</option>
+          <option value="其他">其他</option>
+        </select>
+
+      </div>
+
+      <textarea
+        id="tNote"
+        placeholder="備註"
+      ></textarea>
+
+      <button onclick="addTransaction()">
+        儲存收支紀錄
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>收支紀錄</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日期</th>
+              <th>類型</th>
+              <th>類別</th>
+              <th>說明</th>
+              <th>金額</th>
+              <th>付款方式</th>
+            </tr>
+          </thead>
+
+          <tbody id="transactionList"></tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- 員工 -->
+  <section id="employees" class="section">
+
+    <div class="card">
+
+      <h2>新增員工</h2>
+
+      <div class="grid">
+
+        <input
+          id="eName"
+          placeholder="員工姓名"
+        >
+
+        <input
+          id="ePhone"
+          placeholder="電話"
+        >
+
+        <input
+          id="ePosition"
+          placeholder="職稱"
+        >
+
+        <input
+          id="eSalary"
+          type="number"
+          placeholder="底薪"
+        >
+
+        <input
+          id="eHireDate"
+          type="date"
+        >
+
+      </div>
+
+      <textarea
+        id="eNote"
+        placeholder="備註"
+      ></textarea>
+
+      <button onclick="addEmployee()">
+        儲存員工
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>員工資料</h2>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>姓名</th>
+              <th>電話</th>
+              <th>職稱</th>
+              <th>底薪</th>
+              <th>到職日</th>
+            </tr>
+          </thead>
+
+          <tbody id="employeeList"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- 薪資 -->
+  <section id="salaries" class="section">
+
+    <div class="card">
+
+      <h2>新增薪資</h2>
+
+      <select id="sEmployee"></select>
+
+      <div class="grid">
+
+        <input
+          id="sMonth"
+          type="month"
+        >
+
+        <input
+          id="sBase"
+          type="number"
+          placeholder="底薪"
+        >
+
+        <input
+          id="sOvertime"
+          type="number"
+          placeholder="加班費"
+          value="0"
+        >
+
+        <input
+          id="sBonus"
+          type="number"
+          placeholder="獎金"
+          value="0"
+        >
+
+        <input
+          id="sDeduction"
+          type="number"
+          placeholder="扣款"
+          value="0"
+        >
+
+        <input
+          id="sPaymentDate"
+          type="date"
+        >
+
+      </div>
+
+      <textarea
+        id="sNote"
+        placeholder="薪資備註"
+      ></textarea>
+
+      <button onclick="addSalary()">
+        儲存薪資
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>薪資紀錄</h2>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>底薪</th>
+              <th>加班</th>
+              <th>獎金</th>
+              <th>扣款</th>
+              <th>實領</th>
+            </tr>
+          </thead>
+
+          <tbody id="salaryList"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- 報價 -->
+  <section id="quotations" class="section">
+
+    <div class="card">
+
+      <h2>新增客戶報價單</h2>
+
+      <div class="grid">
+
+        <input
+          id="qNumber"
+          placeholder="報價單號，例如 Q20260001"
+        >
+
+        <input
+          id="qDate"
+          type="date"
+        >
+
+        <input
+          id="qCustomer"
+          placeholder="客戶名稱"
+        >
+
+        <input
+          id="qPhone"
+          placeholder="客戶電話"
+        >
+
+        <input
+          id="qAddress"
+          placeholder="客戶地址"
+        >
+
+        <input
+          id="qSubtotal"
+          type="number"
+          placeholder="未稅金額"
+        >
+
+        <input
+          id="qTax"
+          type="number"
+          placeholder="稅額"
+          value="0"
+        >
+
+      </div>
+
+      <textarea
+        id="qNote"
+        placeholder="報價備註"
+      ></textarea>
+
+      <button onclick="addQuotation()">
+        建立報價單
+      </button>
+
+    </div>
+
+
+    <div class="card">
+
+      <h2>報價單紀錄</h2>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>單號</th>
+              <th>日期</th>
+              <th>客戶</th>
+              <th>未稅</th>
+              <th>稅額</th>
+              <th>總額</th>
+              <th>狀態</th>
+            </tr>
+          </thead>
+
+          <tbody id="quotationList"></tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</div>
+
+
+<script>
+
+const SUPABASE_URL =
+  "https://pvrvrkptocddkcsbbzsg.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY";
+
+const client =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY
+  );
+
+
+function money(value){
+  return new Intl.NumberFormat(
+    "zh-TW",
+    {
+      style:"currency",
+      currency:"TWD",
+      maximumFractionDigits:0
+    }
+  ).format(value || 0);
+}
+
+
+async funct

@@ -635,8 +635,8 @@ function money(value){
 
 
 async function login() {
-  const email = document.getElementById("loginemail").value.trim();
-  const password = document.getElementById("loginpassword").value;
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
 
   if (!email || !password) {
     alert("請輸入 Email 和密碼");
@@ -656,3 +656,6 @@ async function login() {
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 }
+</script>
+</body>
+</html>

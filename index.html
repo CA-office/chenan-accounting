@@ -1,608 +1,593 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>晨安企業｜內帳管理系統</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>晨安企業｜內帳管理系統</title>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <style>
-    *{
-      box-sizing:border-box;
-    }
+<style>
+* {
+box-sizing: border-box;
+}
 
-    body{
-      margin:0;
-      font-family:
-        -apple-system,BlinkMacSystemFont,
-        "Segoe UI","Microsoft JhengHei",sans-serif;
-      background:#f4f6f8;
-      color:#263238;
-    }
+body {
+margin: 0;
+font-family: -apple-system, BlinkMacSystemFont,
+"Segoe UI", "Microsoft JhengHei", sans-serif;
+background: #f4f6f8;
+color: #263238;
+}
 
-    header{
-      background:linear-gradient(135deg,#263238,#455a64);
-      color:white;
-      padding:22px;
-      text-align:center;
-    }
+header {
+background: linear-gradient(135deg, #263238, #455a64);
+color: white;
+padding: 22px;
+text-align: center;
+}
 
-    header h1{
-      margin:0;
-      font-size:26px;
-    }
+header h1 {
+margin: 0;
+font-size: 26px;
+}
 
-    header p{
-      margin:6px 0 0;
-      opacity:.8;
-    }
+header p {
+margin: 6px 0 0;
+opacity: .8;
+}
 
-    .container{
-      max-width:1100px;
-      margin:auto;
-      padding:18px;
-    }
+.container {
+max-width: 1100px;
+margin: auto;
+padding: 18px;
+}
 
-    .card{
-      background:white;
-      border-radius:18px;
-      padding:20px;
-      margin-bottom:18px;
-      box-shadow:0 5px 20px rgba(0,0,0,.07);
-    }
+.card {
+background: white;
+border-radius: 18px;
+padding: 20px;
+margin-bottom: 18px;
+box-shadow: 0 5px 20px rgba(0,0,0,.07);
+}
 
-    input,select,textarea,button{
-      width:100%;
-      padding:12px;
-      margin:6px 0;
-      border-radius:10px;
-      border:1px solid #d5dadd;
-      font-size:16px;
-    }
+input,
+select,
+textarea,
+button {
+width: 100%;
+padding: 12px;
+margin: 6px 0;
+border-radius: 10px;
+border: 1px solid #d5dadd;
+font-size: 16px;
+}
 
-    textarea{
-      min-height:80px;
-    }
+textarea {
+min-height: 80px;
+}
 
-    button{
-      border:0;
-      background:#37474f;
-      color:white;
-      cursor:pointer;
-      font-weight:600;
-    }
+button {
+border: 0;
+background: #37474f;
+color: white;
+cursor: pointer;
+font-weight: 600;
+}
 
-    button:hover{
-      opacity:.9;
-    }
+button:hover {
+opacity: .9;
+}
 
-    .btn-danger{
-      background:#b71c1c;
-    }
+.btn-danger {
+background: #b71c1c;
+}
 
-    .btn-green{
-      background:#2e7d32;
-    }
+.btn-green {
+background: #2e7d32;
+}
 
-    .tabs{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:8px;
-      margin-bottom:16px;
-    }
+.tabs {
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: 8px;
+margin-bottom: 16px;
+}
 
-    .tabs button{
-      margin:0;
-      background:white;
-      color:#37474f;
-      border:1px solid #cfd8dc;
-    }
+.tabs button {
+margin: 0;
+background: white;
+color: #37474f;
+border: 1px solid #cfd8dc;
+}
 
-    .tabs button.active{
-      background:#37474f;
-      color:white;
-    }
+.tabs button.active {
+background: #37474f;
+color: white;
+}
 
-    .section{
-      display:none;
-    }
+.section {
+display: none;
+}
 
-    .section.active{
-      display:block;
-    }
+.section.active {
+display: block;
+}
 
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(2,1fr);
-      gap:10px;
-    }
+.grid {
+display: grid;
+grid-template-columns: repeat(2, 1fr);
+gap: 10px;
+}
 
-    .summary{
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:12px;
-    }
+.summary {
+display: grid;
+grid-template-columns: repeat(3, 1fr);
+gap: 12px;
+}
 
-    .summary-box{
-      padding:18px;
-      border-radius:14px;
-      background:#eceff1;
-      text-align:center;
-    }
+.summary-box {
+padding: 18px;
+border-radius: 14px;
+background: #eceff1;
+text-align: center;
+}
 
-    .summary-box strong{
-      display:block;
-      font-size:22px;
-      margin-top:5px;
-    }
+.summary-box strong {
+display: block;
+font-size: 22px;
+margin-top: 5px;
+}
 
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:15px;
-      font-size:14px;
-    }
+table {
+width: 100%;
+border-collapse: collapse;
+margin-top: 15px;
+font-size: 14px;
+}
 
-    th,td{
-      border-bottom:1px solid #eceff1;
-      padding:10px;
-      text-align:left;
-    }
+th,
+td {
+border-bottom: 1px solid #eceff1;
+padding: 10px;
+text-align: left;
+white-space: nowrap;
+}
 
-    th{
-      background:#f5f7f8;
-    }
+th {
+background: #f5f7f8;
+}
 
-    .table-wrap{
-      overflow-x:auto;
-    }
+.table-wrap {
+overflow-x: auto;
+}
 
-    #loginScreen{
-      max-width:430px;
-      margin:60px auto;
-    }
+#loginScreen {
+max-width: 430px;
+margin: 60px auto;
+}
 
-    #app{
-      display:none;
-    }
+#app {
+display: none;
+}
 
-    .logout{
-      max-width:150px;
-      margin-left:auto;
-      background:#546e7a;
-    }
+.logout {
+max-width: 150px;
+margin-left: auto;
+background: #546e7a;
+}
 
-    .message{
-      text-align:center;
-      padding:10px;
-      min-height:30px;
-    }
+.message {
+text-align: center;
+padding: 10px;
+min-height: 30px;
+}
 
-    @media(max-width:700px){
-      .grid,
-      .summary{
-        grid-template-columns:1fr;
-      }
+@media(max-width:700px) {
+.grid,
+.summary {
+grid-template-columns: 1fr;
+}
 
-      .tabs{
-        grid-template-columns:repeat(2,1fr);
-      }
-    }
-  </style>
+.tabs {
+grid-template-columns: repeat(2, 1fr);
+}
+}
+</style>
 </head>
 
 <body>
 
 <header>
-  <h1>晨安企業</h1>
-  <p>內帳・薪資・報價管理系統</p>
+<h1>晨安企業</h1>
+<p>內帳・薪資・報價管理系統</p>
 </header>
 
 <div id="loginScreen" class="container">
-  <div class="card">
-    <h2>管理員登入</h2>
+<div class="card">
+<h2>管理員登入</h2>
 
-    <input
-      id="loginEmail"
-      type="email"
-      placeholder="Email"
-    >
+<input
+id="loginEmail"
+type="email"
+placeholder="Email"
+>
 
-    <input
-      id="loginPassword"
-      type="password"
-      placeholder="密碼"
-    >
+<input
+id="loginPassword"
+type="password"
+placeholder="密碼"
+>
 
-    <button onclick="login()">登入</button>
+<button onclick="login()">登入</button>
 
-    <div id="loginMessage" class="message"></div>
-  </div>
+<div id="loginMessage" class="message"></div>
+</div>
 </div>
 
 
 <div id="app" class="container">
 
-  <button class="logout" onclick="logout()">登出</button>
+<button class="logout" onclick="logout()">登出</button>
+
+<div class="summary">
+<div class="summary-box">
+本月收入
+<strong id="totalIncome">$0</strong>
+</div>
+
+<div class="summary-box">
+本月支出
+<strong id="totalExpense">$0</strong>
+</div>
+
+<div class="summary-box">
+本月損益
+<strong id="profit">$0</strong>
+</div>
+</div>
+
+<br>
+
+<div class="tabs">
+<button class="active" onclick="showTab('transactions',this)">
+收支帳
+</button>
+
+<button onclick="showTab('employees',this)">
+員工
+</button>
+
+<button onclick="showTab('salaries',this)">
+薪資
+</button>
+
+<button onclick="showTab('quotations',this)">
+報價單
+</button>
+</div>
+
+
+<!-- 收支帳 -->
+<section id="transactions" class="section active">
+
+<div class="card">
+<h2>新增收入／支出</h2>
+
+<div class="grid">
+
+<input id="tDate" type="date">
+
+<select id="tType">
+<option value="收入">收入</option>
+<option value="支出">支出</option>
+</select>
+
+<input
+id="tCategory"
+placeholder="類別，例如：銷貨收入、材料費"
+>
+
+<input
+id="tDescription"
+placeholder="內容說明"
+>
+
+<input
+id="tAmount"
+type="number"
+placeholder="金額"
+>
+
+<select id="tPayment">
+<option value="現金">現金</option>
+<option value="銀行轉帳">銀行轉帳</option>
+<option value="支票">支票</option>
+<option value="其他">其他</option>
+</select>
+
+</div>
+
+<textarea
+id="tNote"
+placeholder="備註"
+></textarea>
+
+<button onclick="addTransaction()">
+儲存收支紀錄
+</button>
+</div>
+
 
-  <div class="summary">
-    <div class="summary-box">
-      本月收入
-      <strong id="totalIncome">$0</strong>
-    </div>
+<div class="card">
+<h2>收支紀錄</h2>
 
-    <div class="summary-box">
-      本月支出
-      <strong id="totalExpense">$0</strong>
-    </div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>類型</th>
+<th>類別</th>
+<th>說明</th>
+<th>金額</th>
+<th>付款方式</th>
+</tr>
+</thead>
 
-    <div class="summary-box">
-      本月損益
-      <strong id="profit">$0</strong>
-    </div>
-  </div>
+<tbody id="transactionList"></tbody>
+</table>
+</div>
+</div>
 
-  <br>
+</section>
 
-  <div class="tabs">
-    <button class="active" onclick="showTab('transactions',this)">
-      收支帳
-    </button>
 
-    <button onclick="showTab('employees',this)">
-      員工
-    </button>
+<!-- 員工 -->
+<section id="employees" class="section">
 
-    <button onclick="showTab('salaries',this)">
-      薪資
-    </button>
+<div class="card">
+<h2>新增員工</h2>
 
-    <button onclick="showTab('quotations',this)">
-      報價單
-    </button>
-  </div>
+<div class="grid">
+
+<input
+id="eName"
+placeholder="員工姓名"
+>
+
+<input
+id="ePhone"
+placeholder="電話"
+>
+
+<input
+id="ePosition"
+placeholder="職稱"
+>
+
+<input
+id="eSalary"
+type="number"
+placeholder="底薪"
+>
+
+<input
+id="eHireDate"
+type="date"
+>
+
+</div>
+
+<textarea
+id="eNote"
+placeholder="備註"
+></textarea>
 
+<button onclick="addEmployee()">
+儲存員工
+</button>
+</div>
+
+
+<div class="card">
+<h2>員工資料</h2>
+
+<div class="table-wrap">
+<table>
+
+<thead>
+<tr>
+<th>姓名</th>
+<th>電話</th>
+<th>職稱</th>
+<th>底薪</th>
+<th>到職日</th>
+</tr>
+</thead>
+
+<tbody id="employeeList"></tbody>
 
-  <!-- 收支帳 -->
-  <section id="transactions" class="section active">
+</table>
+</div>
+</div>
 
-    <div class="card">
+</section>
 
-      <h2>新增收入／支出</h2>
 
-      <div class="grid">
+<!-- 薪資 -->
+<section id="salaries" class="section">
 
-        <input id="tDate" type="date">
+<div class="card">
+<h2>新增薪資</h2>
 
-        <select id="tType">
-          <option value="收入">收入</option>
-          <option value="支出">支出</option>
-        </select>
+<select id="sEmployee">
+<option value="">請選擇員工</option>
+</select>
 
-        <input
-          id="tCategory"
-          placeholder="類別，例如：銷貨收入、材料費"
-        >
-
-        <input
-          id="tDescription"
-          placeholder="內容說明"
-        >
-
-        <input
-          id="tAmount"
-          type="number"
-          placeholder="金額"
-        >
-
-        <select id="tPayment">
-          <option value="現金">現金</option>
-          <option value="銀行轉帳">銀行轉帳</option>
-          <option value="支票">支票</option>
-          <option value="其他">其他</option>
-        </select>
-
-      </div>
-
-      <textarea
-        id="tNote"
-        placeholder="備註"
-      ></textarea>
-
-      <button onclick="addTransaction()">
-        儲存收支紀錄
-      </button>
-
-    </div>
-
-
-    <div class="card">
-
-      <h2>收支紀錄</h2>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>日期</th>
-              <th>類型</th>
-              <th>類別</th>
-              <th>說明</th>
-              <th>金額</th>
-              <th>付款方式</th>
-            </tr>
-          </thead>
-
-          <tbody id="transactionList"></tbody>
-        </table>
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- 員工 -->
-  <section id="employees" class="section">
-
-    <div class="card">
-
-      <h2>新增員工</h2>
-
-      <div class="grid">
-
-        <input
-          id="eName"
-          placeholder="員工姓名"
-        >
-
-        <input
-          id="ePhone"
-          placeholder="電話"
-        >
-
-        <input
-          id="ePosition"
-          placeholder="職稱"
-        >
-
-        <input
-          id="eSalary"
-          type="number"
-          placeholder="底薪"
-        >
-
-        <input
-          id="eHireDate"
-          type="date"
-        >
-
-      </div>
-
-      <textarea
-        id="eNote"
-        placeholder="備註"
-      ></textarea>
-
-      <button onclick="addEmployee()">
-        儲存員工
-      </button>
-
-    </div>
-
-
-    <div class="card">
-
-      <h2>員工資料</h2>
-
-      <div class="table-wrap">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>姓名</th>
-              <th>電話</th>
-              <th>職稱</th>
-              <th>底薪</th>
-              <th>到職日</th>
-            </tr>
-          </thead>
-
-          <tbody id="employeeList"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- 薪資 -->
-  <section id="salaries" class="section">
-
-    <div class="card">
-
-      <h2>新增薪資</h2>
-
-      <select id="sEmployee"></select>
-
-      <div class="grid">
-
-        <input
-          id="sMonth"
-          type="month"
-        >
-
-        <input
-          id="sBase"
-          type="number"
-          placeholder="底薪"
-        >
-
-        <input
-          id="sOvertime"
-          type="number"
-          placeholder="加班費"
-          value="0"
-        >
-
-        <input
-          id="sBonus"
-          type="number"
-          placeholder="獎金"
-          value="0"
-        >
-
-        <input
-          id="sDeduction"
-          type="number"
-          placeholder="扣款"
-          value="0"
-        >
-
-        <input
-          id="sPaymentDate"
-          type="date"
-        >
-
-      </div>
-
-      <textarea
-        id="sNote"
-        placeholder="薪資備註"
-      ></textarea>
-
-      <button onclick="addSalary()">
-        儲存薪資
-      </button>
-
-    </div>
-
-
-    <div class="card">
-
-      <h2>薪資紀錄</h2>
-
-      <div class="table-wrap">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>月份</th>
-              <th>底薪</th>
-              <th>加班</th>
-              <th>獎金</th>
-              <th>扣款</th>
-              <th>實領</th>
-            </tr>
-          </thead>
-
-          <tbody id="salaryList"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- 報價 -->
-  <section id="quotations" class="section">
-
-    <div class="card">
-
-      <h2>新增客戶報價單</h2>
-
-      <div class="grid">
-
-        <input
-          id="qNumber"
-          placeholder="報價單號，例如 Q20260001"
-        >
-
-        <input
-          id="qDate"
-          type="date"
-        >
-
-        <input
-          id="qCustomer"
-          placeholder="客戶名稱"
-        >
-
-        <input
-          id="qPhone"
-          placeholder="客戶電話"
-        >
-
-        <input
-          id="qAddress"
-          placeholder="客戶地址"
-        >
-
-        <input
-          id="qSubtotal"
-          type="number"
-          placeholder="未稅金額"
-        >
-
-        <input
-          id="qTax"
-          type="number"
-          placeholder="稅額"
-          value="0"
-        >
-
-      </div>
-
-      <textarea
-        id="qNote"
-        placeholder="報價備註"
-      ></textarea>
-
-      <button onclick="addQuotation()">
-        建立報價單
-      </button>
-
-    </div>
-
-
-    <div class="card">
-
-      <h2>報價單紀錄</h2>
-
-      <div class="table-wrap">
-
-        <table>
-
-          <thead>
-            <tr>
-              <th>單號</th>
-              <th>日期</th>
-              <th>客戶</th>
-              <th>未稅</th>
-              <th>稅額</th>
-              <th>總額</th>
-              <th>狀態</th>
-            </tr>
-          </thead>
-
-          <tbody id="quotationList"></tbody>
-
-        </table>
-
-      </div>
-
-    </div>
-
-  </section>
+<div class="grid">
+
+<input
+id="sMonth"
+type="month"
+>
+
+<input
+id="sBase"
+type="number"
+placeholder="底薪"
+>
+
+<input
+id="sOvertime"
+type="number"
+placeholder="加班費"
+value="0"
+>
+
+<input
+id="sBonus"
+type="number"
+placeholder="獎金"
+value="0"
+>
+
+<input
+id="sDeduction"
+type="number"
+placeholder="扣款"
+value="0"
+>
+
+<input
+id="sPaymentDate"
+type="date"
+>
+
+</div>
+
+<textarea
+id="sNote"
+placeholder="薪資備註"
+></textarea>
+
+<button onclick="addSalary()">
+儲存薪資
+</button>
+</div>
+
+
+<div class="card">
+<h2>薪資紀錄</h2>
+
+<div class="table-wrap">
+<table>
+
+<thead>
+<tr>
+<th>月份</th>
+<th>員工</th>
+<th>底薪</th>
+<th>加班</th>
+<th>獎金</th>
+<th>扣款</th>
+<th>實領</th>
+</tr>
+</thead>
+
+<tbody id="salaryList"></tbody>
+
+</table>
+</div>
+</div>
+
+</section>
+
+
+<!-- 報價單 -->
+<section id="quotations" class="section">
+
+<div class="card">
+<h2>新增客戶報價單</h2>
+
+<div class="grid">
+
+<input
+id="qNumber"
+placeholder="報價單號，例如 Q20260001"
+>
+
+<input
+id="qDate"
+type="date"
+>
+
+<input
+id="qCustomer"
+placeholder="客戶名稱"
+>
+
+<input
+id="qPhone"
+placeholder="客戶電話"
+>
+
+<input
+id="qAddress"
+placeholder="客戶地址"
+>
+
+<input
+id="qSubtotal"
+type="number"
+placeholder="未稅金額"
+>
+
+<input
+id="qTax"
+type="number"
+placeholder="稅額"
+value="0"
+>
+
+</div>
+
+<textarea
+id="qNote"
+placeholder="報價備註"
+></textarea>
+
+<button onclick="addQuotation()">
+建立報價單
+</button>
+</div>
+
+
+<div class="card">
+<h2>報價單紀錄</h2>
+
+<div class="table-wrap">
+<table>
+
+<thead>
+<tr>
+<th>單號</th>
+<th>日期</th>
+<th>客戶</th>
+<th>未稅</th>
+<th>稅額</th>
+<th>總額</th>
+<th>狀態</th>
+</tr>
+</thead>
+
+<tbody id="quotationList"></tbody>
+
+</table>
+</div>
+</div>
+
+</section>
 
 </div>
 
@@ -610,53 +595,656 @@
 <script>
 
 const SUPABASE_URL =
-  "https://pvrvrkptocddkcsbbzsg.supabase.co";
+"https://pvrvrkptocddkcsbbzsg.supabase.co"
 
 const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY";
+"sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY"
 
 const client =
-  window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_PUBLISHABLE_KEY
+);
 
 
-function money(value){
-  return new Intl.NumberFormat(
-    "zh-TW",
-    {
-      style:"currency",
-      currency:"TWD",
-      maximumFractionDigits:0
-    }
-  ).format(value || 0);
+function money(value) {
+return new Intl.NumberFormat(
+"zh-TW",
+{
+style: "currency",
+currency: "TWD",
+maximumFractionDigits: 0
+}
+).format(Number(value) || 0);
 }
 
 
+function safe(value) {
+const div = document.createElement("div");
+div.textContent = value ?? ""
+return div.innerHTML;
+}
+
+
+/* 登入 */
 window.login = async function () {
-  const email = document.getElementById("loginEmail").value.trim();
-  const password = document.getElementById("loginPassword").value;
 
-  if (!email || !password) {
-    alert("請輸入 Email 和密碼");
-    return;
-  }
+const email =
+document.getElementById("loginEmail").value.trim();
 
-  const { data, error } = await client.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
+const password =
+document.getElementById("loginPassword").value;
 
-  if (error) {
-    alert("登入失敗：" + error.message);
-    return;
-  }
+if (!email || !password) {
+alert("請輸入 Email 和密碼");
+return;
+}
 
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("app").style.display = "block";
+const { error } =
+await client.auth.signInWithPassword({
+email: email,
+password: password
+});
+
+if (error) {
+alert("登入失敗：" + error.message);
+return;
+}
+
+showApp();
 };
 
+
+/* 登出 */
+window.logout = async function () {
+
+await client.auth.signOut();
+
+document.getElementById("app").style.display = "none"
+
+document.getElementById("loginScreen").style.display = "block"
+
+document.getElementById("loginPassword").value = ""
+};
+
+
+/* 顯示系統 */
+async function showApp() {
+
+document.getElementById("loginScreen").style.display = "none"
+
+document.getElementById("app").style.display = "block"
+
+await loadTransactions();
+await loadEmployees();
+await loadSalaries();
+await loadQuotations();
+}
+
+
+/* 頁籤 */
+window.showTab = function(tabName, button) {
+
+document.querySelectorAll(".section")
+.forEach(function(section) {
+section.classList.remove("active");
+});
+
+document.querySelectorAll(".tabs button")
+.forEach(function(btn) {
+btn.classList.remove("active");
+});
+
+const selectedTab =
+document.getElementById(tabName);
+
+if (selectedTab) {
+selectedTab.classList.add("active");
+}
+
+if (button) {
+button.classList.add("active");
+}
+};
+
+
+/* =========================
+收支帳
+========================= */
+
+window.addTransaction = async function () {
+
+const date =
+document.getElementById("tDate").value;
+
+const type =
+document.getElementById("tType").value;
+
+const category =
+document.getElementById("tCategory").value.trim();
+
+const description =
+document.getElementById("tDescription").value.trim();
+
+const amount =
+Number(document.getElementById("tAmount").value || 0);
+
+const payment =
+document.getElementById("tPayment").value;
+
+const note =
+document.getElementById("tNote").value.trim();
+
+if (!date) {
+alert("請選擇日期");
+return;
+}
+
+if (!amount) {
+alert("請輸入金額");
+return;
+}
+
+const { error } =
+await client
+.from("transactions")
+.insert({
+transaction_date: date,
+type: type,
+category: category,
+description: description,
+amount: amount,
+payment_method: payment,
+note: note
+});
+
+if (error) {
+alert("儲存失敗：" + error.message);
+return;
+}
+
+alert("收支紀錄儲存成功");
+
+document.getElementById("tCategory").value = ""
+document.getElementById("tDescription").value = ""
+document.getElementById("tAmount").value = ""
+document.getElementById("tNote").value = ""
+
+await loadTransactions();
+};
+
+
+async function loadTransactions() {
+
+const { data, error } =
+await client
+.from("transactions")
+.select("*")
+.order("transaction_date", {
+ascending: false
+});
+
+if (error) {
+console.error(error);
+return;
+}
+
+const list =
+document.getElementById("transactionList");
+
+list.innerHTML = ""
+
+let income = 0;
+let expense = 0;
+
+const now = new Date();
+
+const currentMonth =
+now.getFullYear() +
+"-" +
+String(now.getMonth() + 1).padStart(2, "0");
+
+data.forEach(function(item) {
+
+const row =
+document.createElement("tr");
+
+row.innerHTML =
+"<td>" + safe(item.transaction_date) + "</td>" +
+"<td>" + safe(item.type) + "</td>" +
+"<td>" + safe(item.category) + "</td>" +
+"<td>" + safe(item.description) + "</td>" +
+"<td>" + money(item.amount) + "</td>" +
+"<td>" + safe(item.payment_method) + "</td>"
+
+list.appendChild(row);
+
+if (
+item.transaction_date &&
+item.transaction_date.startsWith(currentMonth)
+) {
+
+if (item.type === "收入") {
+income += Number(item.amount || 0);
+}
+
+if (item.type === "支出") {
+expense += Number(item.amount || 0);
+}
+}
+});
+
+document.getElementById("totalIncome").textContent =
+money(income);
+
+document.getElementById("totalExpense").textContent =
+money(expense);
+
+document.getElementById("profit").textContent =
+money(income - expense);
+}
+
+
+/* =========================
+員工
+========================= */
+
+window.addEmployee = async function () {
+
+const name =
+document.getElementById("eName").value.trim();
+
+const phone =
+document.getElementById("ePhone").value.trim();
+
+const position =
+document.getElementById("ePosition").value.trim();
+
+const baseSalary =
+Number(document.getElementById("eSalary").value || 0);
+
+const hireDate =
+document.getElementById("eHireDate").value || null;
+
+const note =
+document.getElementById("eNote").value.trim();
+
+if (!name) {
+alert("請輸入員工姓名");
+return;
+}
+
+const { error } =
+await client
+.from("employees")
+.insert({
+name: name,
+phone: phone,
+position: position,
+base_salary: baseSalary,
+hire_date: hireDate,
+note: note
+});
+
+if (error) {
+alert("員工儲存失敗：" + error.message);
+return;
+}
+
+alert("員工資料儲存成功");
+
+document.getElementById("eName").value = ""
+document.getElementById("ePhone").value = ""
+document.getElementById("ePosition").value = ""
+document.getElementById("eSalary").value = ""
+document.getElementById("eHireDate").value = ""
+document.getElementById("eNote").value = ""
+
+await loadEmployees();
+};
+
+
+async function loadEmployees() {
+
+const { data, error } =
+await client
+.from("employees")
+.select("*")
+.order("created_at", {
+ascending: false
+});
+
+if (error) {
+console.error(error);
+return;
+}
+
+const list =
+document.getElementById("employeeList");
+
+list.innerHTML = ""
+
+const salarySelect =
+document.getElementById("sEmployee");
+
+salarySelect.innerHTML =
+'<option value="">請選擇員工</option>';
+
+data.forEach(function(employee) {
+
+const row =
+document.createElement("tr");
+
+row.innerHTML =
+"<td>" + safe(employee.name) + "</td>" +
+"<td>" + safe(employee.phone) + "</td>" +
+"<td>" + safe(employee.position) + "</td>" +
+"<td>" + money(employee.base_salary) + "</td>" +
+"<td>" + safe(employee.hire_date) + "</td>"
+
+list.appendChild(row);
+
+const option =
+document.createElement("option");
+
+option.value = employee.id;
+option.textContent = employee.name;
+
+option.dataset.salary =
+employee.base_salary || 0;
+
+salarySelect.appendChild(option);
+});
+}
+
+
+document
+.getElementById("sEmployee")
+.addEventListener("change", function () {
+
+const option =
+this.options[this.selectedIndex];
+
+if (option && option.dataset.salary) {
+document.getElementById("sBase").value =
+option.dataset.salary;
+}
+});
+
+
+/* =========================
+薪資
+========================= */
+
+window.addSalary = async function () {
+
+const employeeId =
+document.getElementById("sEmployee").value;
+
+const month =
+document.getElementById("sMonth").value;
+
+const base =
+Number(document.getElementById("sBase").value || 0);
+
+const overtime =
+Number(document.getElementById("sOvertime").value || 0);
+
+const bonus =
+Number(document.getElementById("sBonus").value || 0);
+
+const deduction =
+Number(document.getElementById("sDeduction").value || 0);
+
+const paymentDate =
+document.getElementById("sPaymentDate").value || null;
+
+const note =
+document.getElementById("sNote").value.trim();
+
+if (!employeeId) {
+alert("請選擇員工");
+return;
+}
+
+if (!month) {
+alert("請選擇薪資月份");
+return;
+}
+
+const netSalary =
+base + overtime + bonus - deduction;
+
+const salaryMonth =
+month + "-01"
+
+const { error } =
+await client
+.from("salaries")
+.insert({
+employee_id: employeeId,
+salary_month: salaryMonth,
+base_salary: base,
+overtime_pay: overtime,
+bonus: bonus,
+deduction: deduction,
+net_salary: netSalary,
+payment_date: paymentDate,
+note: note
+});
+
+if (error) {
+alert("薪資儲存失敗：" + error.message);
+return;
+}
+
+alert("薪資儲存成功，實領 " + money(netSalary));
+
+document.getElementById("sEmployee").value = ""
+document.getElementById("sMonth").value = ""
+document.getElementById("sBase").value = ""
+document.getElementById("sOvertime").value = "0"
+document.getElementById("sBonus").value = "0"
+document.getElementById("sDeduction").value = "0"
+document.getElementById("sPaymentDate").value = ""
+document.getElementById("sNote").value = ""
+
+await loadSalaries();
+};
+
+
+async function loadSalaries() {
+
+const { data, error } =
+await client
+.from("salaries")
+.select(`
+*,
+employees (
+name
+)
+`)
+.order("salary_month", {
+ascending: false
+});
+
+if (error) {
+console.error(error);
+return;
+}
+
+const list =
+document.getElementById("salaryList");
+
+list.innerHTML = ""
+
+data.forEach(function(item) {
+
+const row =
+document.createElement("tr");
+
+const month =
+item.salary_month
+? item.salary_month.substring(0, 7)
+: ""
+
+const employeeName =
+item.employees
+? item.employees.name
+: ""
+
+row.innerHTML =
+"<td>" + safe(month) + "</td>" +
+"<td>" + safe(employeeName) + "</td>" +
+"<td>" + money(item.base_salary) + "</td>" +
+"<td>" + money(item.overtime_pay) + "</td>" +
+"<td>" + money(item.bonus) + "</td>" +
+"<td>" + money(item.deduction) + "</td>" +
+"<td>" + money(item.net_salary) + "</td>"
+
+list.appendChild(row);
+});
+}
+
+
+/* =========================
+報價單
+========================= */
+
+window.addQuotation = async function () {
+
+const number =
+document.getElementById("qNumber").value.trim();
+
+const date =
+document.getElementById("qDate").value;
+
+const customer =
+document.getElementById("qCustomer").value.trim();
+
+const phone =
+document.getElementById("qPhone").value.trim();
+
+const address =
+document.getElementById("qAddress").value.trim();
+
+const subtotal =
+Number(document.getElementById("qSubtotal").value || 0);
+
+const tax =
+Number(document.getElementById("qTax").value || 0);
+
+const note =
+document.getElementById("qNote").value.trim();
+
+if (!number) {
+alert("請輸入報價單號");
+return;
+}
+
+if (!date) {
+alert("請選擇報價日期");
+return;
+}
+
+if (!customer) {
+alert("請輸入客戶名稱");
+return;
+}
+
+const total =
+subtotal + tax;
+
+const { error } =
+await client
+.from("quotations")
+.insert({
+quote_number: number,
+quote_date: date,
+customer_name: customer,
+customer_phone: phone,
+customer_address: address,
+subtotal: subtotal,
+tax: tax,
+total: total,
+status: "草稿",
+note: note
+});
+
+if (error) {
+alert("報價單建立失敗：" + error.message);
+return;
+}
+
+alert("報價單建立成功");
+
+document.getElementById("qNumber").value = ""
+document.getElementById("qDate").value = ""
+document.getElementById("qCustomer").value = ""
+document.getElementById("qPhone").value = ""
+document.getElementById("qAddress").value = ""
+document.getElementById("qSubtotal").value = ""
+document.getElementById("qTax").value = "0"
+document.getElementById("qNote").value = ""
+
+await loadQuotations();
+};
+
+
+async function loadQuotations() {
+
+const { data, error } =
+await client
+.from("quotations")
+.select("*")
+.order("quote_date", {
+ascending: false
+});
+
+if (error) {
+console.error(error);
+return;
+}
+
+const list =
+document.getElementById("quotationList");
+
+list.innerHTML = ""
+
+data.forEach(function(item) {
+
+const row =
+document.createElement("tr");
+
+row.innerHTML =
+"<td>" + safe(item.quote_number) + "</td>" +
+"<td>" + safe(item.quote_date) + "</td>" +
+"<td>" + safe(item.customer_name) + "</td>" +
+"<td>" + money(item.subtotal) + "</td>" +
+"<td>" + money(item.tax) + "</td>" +
+"<td>" + money(item.total) + "</td>" +
+"<td>" + safe(item.status) + "</td>"
+
+list.appendChild(row);
+});
+}
+
+
+/* 已登入時自動進入系統 */
+async function checkLogin() {
+
+const {
+data: { session }
+} = await client.auth.getSession();
+
+if (session) {
+await showApp();
+}
+}
+
+checkLogin();
+
 </script>
+
 </body>
 </html>

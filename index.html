@@ -168,7 +168,7 @@ th{background:#f5f7f8}
 <!-- 收支帳 -->
 <section id="transactions" class="section">
 <div class="card">
-<h2>新增收入／支出</h2>
+<h2 id="transactionFormTitle">新增收入／支出</h2>
 <div class="grid">
 <div class="form-field"><label for="tDate">日期</label><input id="tDate" type="date"></div>
 <div class="form-field"><label for="tType">類型</label><select id="tType"><option value="收入">收入</option><option value="支出">支出</option></select></div>
@@ -178,12 +178,12 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tPayment">付款方式</label><select id="tPayment"><option value="現金">現金</option><option value="銀行轉帳">銀行轉帳</option><option value="支票">支票</option><option value="其他">其他</option></select></div>
 </div>
 <div class="form-field"><label for="tNote">備註</label><textarea id="tNote" placeholder="請輸入備註"></textarea></div>
-<button onclick="addTransaction()">儲存收支紀錄</button>
+<button id="transactionSaveBtn" onclick="addTransaction()">儲存收支紀錄</button><button id="transactionCancelBtn" class="btn-secondary" style="display:none" onclick="cancelTransactionEdit()">取消修改</button>
 </div>
 <div class="card">
 <h2>收支紀錄</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>類型</th><th>類別</th><th>說明</th><th>金額</th><th>付款方式</th>
+<th>日期</th><th>類型</th><th>類別</th><th>說明</th><th>金額</th><th>付款方式</th><th>操作</th>
 </tr></thead><tbody id="transactionList"></tbody></table></div>
 </div>
 </section>
@@ -286,7 +286,7 @@ th{background:#f5f7f8}
 <!-- 客戶 -->
 <section id="customers" class="section">
 <div class="card">
-<h2>新增客戶</h2>
+<h2 id="customerFormTitle">新增客戶</h2>
 <div class="grid">
 <div class="form-field"><label for="cName">公司抬頭</label><input id="cName" placeholder="請輸入公司抬頭"></div>
 <div class="form-field"><label for="cTaxId">統一編號</label><input id="cTaxId" placeholder="請輸入統一編號"></div>
@@ -295,7 +295,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="cAddress">地址</label><input id="cAddress" placeholder="請輸入地址"></div>
 </div>
 <div class="form-field"><label for="cNote">備註</label><textarea id="cNote" placeholder="請輸入備註"></textarea></div>
-<button onclick="addCustomer()">儲存客戶</button>
+<button id="customerSaveBtn" onclick="addCustomer()">儲存客戶</button><button id="customerCancelBtn" class="btn-secondary" style="display:none" onclick="cancelCustomerEdit()">取消修改</button>
 </div>
 
 <div class="card">
@@ -307,7 +307,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="itemDriverFee">司機費</label><input id="itemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div>
 <div class="form-field"><label for="itemNote">備註</label><input id="itemNote" placeholder="請輸入備註"></div>
 </div>
-<button onclick="addCustomerItem()">儲存客戶項目</button>
+<button id="customerItemSaveBtn" onclick="addCustomerItem()">儲存客戶項目</button><button id="customerItemCancelBtn" class="btn-secondary" style="display:none" onclick="cancelCustomerItemEdit()">取消修改</button>
 </div>
 
 <div class="card">
@@ -332,7 +332,7 @@ th{background:#f5f7f8}
 <div class="card">
 <h2>客戶資料</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th>
+<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th><th>操作</th>
 </tr></thead><tbody id="customerList"></tbody></table></div>
 </div>
 </section>
@@ -359,7 +359,7 @@ th{background:#f5f7f8}
 </div>
 <div class="form-field"><label for="billNote">請款備註</label><textarea id="billNote" placeholder="可留白"></textarea></div>
 <div class="report-actions">
-<button class="btn-green" onclick="saveBillingInvoice()">儲存請款單</button>
+<button id="billingSaveBtn" class="btn-green" onclick="saveBillingInvoice()">儲存請款單</button><button id="billingCancelBtn" class="btn-secondary" style="display:none" onclick="cancelBillingEdit()">取消修改</button>
 <button class="btn-secondary" onclick="downloadBillingPDF()">下載請款單 PDF</button>
 <button class="btn-secondary" onclick="downloadBillingExcel()">下載請款明細 Excel</button>
 </div>
@@ -397,8 +397,12 @@ const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_K
 let employees = [];
 let customers = [];
 let customerItems = [];
+let editingCustomerItemId = null;
 let editingTripId = null;
 let editingEmployeeId = null;
+let editingTransactionId = null;
+let editingCustomerId = null;
+let editingBillingInvoiceId = null;
 
 function money(value){
   return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value)||0);
@@ -524,21 +528,52 @@ async function addTransaction(){
   const note=document.getElementById("tNote").value.trim();
   if(!date){alert("請選擇日期");return}
   if(!amount){alert("請輸入金額");return}
-  const {error}=await client.from("transactions").insert({
-    transaction_date:date,type,category,description,amount,payment_method:payment,note
-  });
-  if(error){alert("儲存失敗："+error.message);return}
-  alert("收支紀錄儲存成功");
-  ["tCategory","tDescription","tAmount","tNote"].forEach(id=>document.getElementById(id).value="");
+  const payload={transaction_date:date,type,category,description,amount,payment_method:payment,note};
+  const result=editingTransactionId
+    ? await client.from("transactions").update(payload).eq("id",editingTransactionId)
+    : await client.from("transactions").insert(payload);
+  if(result.error){alert((editingTransactionId?"修改":"儲存")+"失敗："+result.error.message);return}
+  alert(editingTransactionId?"收支紀錄修改成功":"收支紀錄儲存成功");
+  cancelTransactionEdit();
   await loadTransactions();
 }
+window.editTransaction=function(id){
+  client.from("transactions").select("*").eq("id",id).single().then(({data,error})=>{
+    if(error||!data){alert("讀取收支紀錄失敗");return}
+    editingTransactionId=id;
+    document.getElementById("transactionFormTitle").textContent="修改收支紀錄";
+    document.getElementById("transactionSaveBtn").textContent="儲存修改";
+    document.getElementById("transactionCancelBtn").style.display="inline-block";
+    document.getElementById("tDate").value=data.transaction_date||"";
+    document.getElementById("tType").value=data.type||"收入";
+    document.getElementById("tCategory").value=data.category||"";
+    document.getElementById("tDescription").value=data.description||"";
+    document.getElementById("tAmount").value=data.amount??"";
+    document.getElementById("tPayment").value=data.payment_method||"現金";
+    document.getElementById("tNote").value=data.note||"";
+    document.getElementById("transactions").scrollIntoView({behavior:"smooth"});
+  });
+};
+window.cancelTransactionEdit=function(){
+  editingTransactionId=null;
+  document.getElementById("transactionFormTitle").textContent="新增收入／支出";
+  document.getElementById("transactionSaveBtn").textContent="儲存收支紀錄";
+  document.getElementById("transactionCancelBtn").style.display="none";
+  ["tCategory","tDescription","tAmount","tNote"].forEach(id=>document.getElementById(id).value="");
+};
+window.deleteTransaction=async function(id){
+  if(!confirm("確定要刪除這筆收支紀錄嗎？"))return;
+  const {error}=await client.from("transactions").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  await loadTransactions();
+};
 async function loadTransactions(){
   const {data,error}=await client.from("transactions").select("*").order("transaction_date",{ascending:false});
   if(error){console.error(error);return}
   const list=document.getElementById("transactionList"); list.innerHTML="";
   (data||[]).forEach(item=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.transaction_date)}</td><td>${safe(item.type)}</td><td>${safe(item.category)}</td><td>${safe(item.description)}</td><td>${money(item.amount)}</td><td>${safe(item.payment_method)}</td>`;
+    row.innerHTML=`<td>${safe(item.transaction_date)}</td><td>${safe(item.type)}</td><td>${safe(item.category)}</td><td>${safe(item.description)}</td><td>${money(item.amount)}</td><td>${safe(item.payment_method)}</td><td><div class="actions"><button class="btn-secondary" onclick="editTransaction(${item.id})">修改</button><button class="btn-danger" onclick="deleteTransaction(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
@@ -583,6 +618,14 @@ window.cancelEmployeeEdit=function(){
   document.getElementById("employeeCancelBtn").style.display="none";
   ["eName","ePhone","ePlate","eNote"].forEach(id=>document.getElementById(id).value="");
 };
+window.deleteEmployee=async function(id){
+  if(!confirm("確定要刪除這位司機嗎？如果已有趟次資料，刪除可能會被資料庫阻擋。"))return;
+  const {error}=await client.from("employees").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  if(String(editingEmployeeId)===String(id))cancelEmployeeEdit();
+  await loadEmployees();
+  renderCalendarDriverFilter();renderCalendarLegend();renderCalendar();
+};
 async function loadEmployees(){
   const {data,error}=await client.from("employees").select("*").order("created_at",{ascending:false});
   if(error){console.error(error);return}
@@ -592,7 +635,7 @@ async function loadEmployees(){
   select.innerHTML='<option value="">請選擇司機</option>';
   employees.forEach(employee=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(employee.name)}</td><td>${safe(employee.phone)}</td><td>${safe(employee.license_plate)}</td><td>${safe(employee.note)}</td><td><div class="actions"><button class="btn-secondary" onclick="editEmployee(${employee.id})">修改</button></div></td>`;
+    row.innerHTML=`<td>${safe(employee.name)}</td><td>${safe(employee.phone)}</td><td>${safe(employee.license_plate)}</td><td>${safe(employee.note)}</td><td><div class="actions"><button class="btn-secondary" onclick="editEmployee(${employee.id})">修改</button><button class="btn-danger" onclick="deleteEmployee(${employee.id})">刪除</button></div></td>`;
     list.appendChild(row);
     const opt=document.createElement("option"); opt.value=employee.id; opt.textContent=employee.license_plate ? `${employee.name}｜${employee.license_plate}` : employee.name; select.appendChild(opt);
   });
@@ -606,12 +649,44 @@ async function addCustomer(){
   const address=document.getElementById("cAddress").value.trim();
   const note=document.getElementById("cNote").value.trim();
   if(!name){alert("請輸入客戶名稱");return}
-  const {error}=await client.from("customers").insert({name,tax_id,contact_name,phone,address,note});
-  if(error){alert("客戶儲存失敗："+error.message);return}
-  alert("客戶儲存成功");
-  ["cName","cTaxId","cContact","cPhone","cAddress","cNote"].forEach(id=>document.getElementById(id).value="");
+  const payload={name,tax_id,contact_name,phone,address,note};
+  const result=editingCustomerId
+    ? await client.from("customers").update(payload).eq("id",editingCustomerId)
+    : await client.from("customers").insert(payload);
+  if(result.error){alert((editingCustomerId?"客戶修改失敗：":"客戶儲存失敗：")+result.error.message);return}
+  alert(editingCustomerId?"客戶資料修改成功":"客戶儲存成功");
+  cancelCustomerEdit();
   await loadCustomers();
 }
+window.editCustomer=function(id){
+  const customer=customers.find(c=>String(c.id)===String(id));
+  if(!customer)return;
+  editingCustomerId=id;
+  document.getElementById("customerFormTitle").textContent="修改客戶資料";
+  document.getElementById("customerSaveBtn").textContent="儲存修改";
+  document.getElementById("customerCancelBtn").style.display="inline-block";
+  document.getElementById("cName").value=customer.name||"";
+  document.getElementById("cTaxId").value=customer.tax_id||"";
+  document.getElementById("cContact").value=customer.contact_name||"";
+  document.getElementById("cPhone").value=customer.phone||"";
+  document.getElementById("cAddress").value=customer.address||"";
+  document.getElementById("cNote").value=customer.note||"";
+  document.getElementById("customers").scrollIntoView({behavior:"smooth"});
+};
+window.cancelCustomerEdit=function(){
+  editingCustomerId=null;
+  document.getElementById("customerFormTitle").textContent="新增客戶";
+  document.getElementById("customerSaveBtn").textContent="儲存客戶";
+  document.getElementById("customerCancelBtn").style.display="none";
+  ["cName","cTaxId","cContact","cPhone","cAddress","cNote"].forEach(id=>document.getElementById(id).value="");
+};
+window.deleteCustomer=async function(id){
+  if(!confirm("確定要刪除這位客戶嗎？如果此客戶已有項目或趟次資料，資料庫可能會阻擋刪除。"))return;
+  const {error}=await client.from("customers").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  if(String(editingCustomerId)===String(id))cancelCustomerEdit();
+  await loadCustomers();
+};
 async function loadCustomers(){
   const {data,error}=await client.from("customers").select("*").order("created_at",{ascending:false});
   if(error){console.error(error);return}
@@ -623,7 +698,7 @@ async function loadCustomers(){
   reportCustomer.innerHTML='<option value="">全部客戶</option>';
   customers.forEach(customer=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customer.name)}</td><td>${safe(customer.tax_id)}</td><td>${safe(customer.contact_name)}</td><td>${safe(customer.phone)}</td><td>${safe(customer.address)}</td><td>${safe(customer.note)}</td>`;
+    row.innerHTML=`<td>${safe(customer.name)}</td><td>${safe(customer.tax_id)}</td><td>${safe(customer.contact_name)}</td><td>${safe(customer.phone)}</td><td>${safe(customer.address)}</td><td>${safe(customer.note)}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomer(${customer.id})">修改</button><button class="btn-danger" onclick="deleteCustomer(${customer.id})">刪除</button></div></td>`;
     list.appendChild(row);
     selects.forEach(select=>{
       const opt=document.createElement("option");opt.value=customer.id;opt.textContent=customer.name;select.appendChild(opt);
@@ -636,6 +711,7 @@ async function loadCustomers(){
   await loadCustomerItems();
   await loadCustomerQuoteReport();
 }
+
 async function addCustomerItem(){
   const customer_id=document.getElementById("itemCustomer").value;
   const name=document.getElementById("itemName").value.trim();
@@ -644,15 +720,46 @@ async function addCustomerItem(){
   const note=document.getElementById("itemNote").value.trim();
   if(!customer_id){alert("請選擇客戶");return}
   if(!name){alert("請輸入項目名稱");return}
-  const {error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note,active:true});
-  if(error){alert("客戶項目儲存失敗："+error.message);return}
-  alert("客戶項目儲存成功");
-  ["itemName","itemCustomerPrice","itemDriverFee","itemNote"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("itemCustomer").value="";
+  if(customer_price<0 || driver_fee<0){alert("客戶收費與司機費不能小於 0");return}
+  const duplicate=customerItems.find(i=>i.active && String(i.customer_id)===String(customer_id) && String(i.name).trim()===name && String(i.id)!==String(editingCustomerItemId||''));
+  if(duplicate){alert("這個客戶已經有相同的項目名稱。");return}
+
+  if(editingCustomerItemId){
+    const {error}=await client.from("customer_items").update({customer_id,name,customer_price,driver_fee,note}).eq("id",editingCustomerItemId);
+    if(error){alert("客戶項目修改失敗："+error.message);return}
+    alert("客戶項目修改成功");
+  }else{
+    const {error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note,active:true});
+    if(error){alert("客戶項目儲存失敗："+error.message);return}
+    alert("客戶項目儲存成功");
+  }
+  cancelCustomerItemEdit();
   await loadCustomerItems();
   await loadCustomerQuoteReport();
   await loadTripItems();
 }
+window.editCustomerItem=function(id){
+  const item=customerItems.find(i=>String(i.id)===String(id));
+  if(!item)return;
+  editingCustomerItemId=id;
+  document.getElementById("itemCustomer").value=String(item.customer_id);
+  document.getElementById("itemName").value=item.name||"";
+  document.getElementById("itemCustomerPrice").value=item.customer_price??"";
+  document.getElementById("itemDriverFee").value=item.driver_fee??"";
+  document.getElementById("itemNote").value=item.note||"";
+  document.getElementById("customerItemSaveBtn").textContent="儲存修改";
+  document.getElementById("customerItemCancelBtn").style.display="inline-block";
+  document.getElementById("itemName")?.focus();
+  window.scrollTo({top:document.getElementById("itemCustomer")?.getBoundingClientRect().top + window.scrollY - 100,behavior:"smooth"});
+};
+window.cancelCustomerItemEdit=function(){
+  editingCustomerItemId=null;
+  ["itemName","itemCustomerPrice","itemDriverFee","itemNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("itemCustomer").value="";
+  document.getElementById("customerItemSaveBtn").textContent="儲存客戶項目";
+  document.getElementById("customerItemCancelBtn").style.display="none";
+};
+
 async function loadCustomerItems(){
   const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
   if(error){console.error(error);return}
@@ -661,7 +768,7 @@ async function loadCustomerItems(){
   customerItems.forEach(item=>{
     const customerName=item.customers?item.customers.name:"";
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${money(item.customer_price)}</td><td>${money(item.driver_fee)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${money(item.customer_price)}</td><td>${money(item.driver_fee)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
@@ -1196,14 +1303,18 @@ async function saveBillingInvoice(){
     month:d.month, rows:d.rows, payment:d.payment, note:d.note,
     customer_tax_id:d.customer.tax_id||"", rate:d.rate
   };
-  const {error}=await client.from("quotations").insert({
+  const payload={
     quote_number:"",quote_date:d.date,customer_name:d.customer.name,
     customer_phone:d.customer.phone||"",customer_address:d.customer.address||"",
     subtotal:d.subtotal,tax:d.tax,total:d.total,status:"已建立請款單",
     note:JSON.stringify(snapshot)
-  });
-  if(error){alert("請款單儲存失敗："+error.message);return}
-  alert("請款單儲存成功");
+  };
+  const result=editingBillingInvoiceId
+    ? await client.from("quotations").update(payload).eq("id",editingBillingInvoiceId)
+    : await client.from("quotations").insert(payload);
+  if(result.error){alert("請款單"+(editingBillingInvoiceId?"修改":"儲存")+"失敗："+result.error.message);return}
+  alert(editingBillingInvoiceId?"請款單修改成功":"請款單儲存成功");
+  cancelBillingEdit();
   await loadQuotations();
 }
 async function loadQuotations(){
@@ -1215,15 +1326,18 @@ async function loadQuotations(){
     let snap=null; try{snap=JSON.parse(item.note||"")}catch(e){}
     const month=snap?.type==="billing_invoice"?snap.month:"";
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${safe(month)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td><td><div class="actions"><button class="btn-secondary" onclick="viewSavedBilling('${String(item.id)}')">查看</button><button class="btn-danger" onclick="deleteBillingInvoice('${String(item.id)}')">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${safe(month)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td><td><div class="actions"><button class="btn-secondary" onclick="editSavedBilling('${String(item.id)}')">修改</button><button class="btn-danger" onclick="deleteBillingInvoice('${String(item.id)}')">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
-async function viewSavedBilling(id){
+async function editSavedBilling(id){
   const {data,error}=await client.from("quotations").select("*").eq("id",id).single();
   if(error){alert("讀取失敗："+error.message);return}
   let snap=null;try{snap=JSON.parse(data.note||"")}catch(e){}
   if(snap?.type!=="billing_invoice"){alert("這筆是舊版報價單資料，無法用新的請款單預覽。");return}
+  editingBillingInvoiceId=id;
+  document.getElementById("billingSaveBtn").textContent="儲存修改";
+  document.getElementById("billingCancelBtn").style.display="inline-block";
   document.getElementById("billDate").value=data.quote_date||today();
   document.getElementById("billMonth").value=snap.month||currentMonth();
   const c=customers.find(x=>x.name===data.customer_name);
@@ -1235,6 +1349,12 @@ async function viewSavedBilling(id){
   renderBillingPreview();
   window.scrollTo({top:0,behavior:"smooth"});
 }
+window.cancelBillingEdit=function(){
+  editingBillingInvoiceId=null;
+  const btn=document.getElementById("billingSaveBtn"); if(btn)btn.textContent="儲存請款單";
+  const cancel=document.getElementById("billingCancelBtn"); if(cancel)cancel.style.display="none";
+};
+window.viewSavedBilling=editSavedBilling;
 async function deleteBillingInvoice(id){
   if(!confirm("確定要刪除這張請款單嗎？"))return;
   const {error}=await client.from("quotations").delete().eq("id",id);

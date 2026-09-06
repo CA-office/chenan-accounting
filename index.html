@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>晨安企業｜內帳管理系統</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;background:#f4f6f8;color:#263238}
@@ -36,7 +39,7 @@ button:hover{opacity:.9}
 table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}
 th,td{border-bottom:1px solid #eceff1;padding:10px;text-align:left;white-space:nowrap}
 th{background:#f5f7f8}
-.actions{display:flex;gap:6px}.actions button{width:auto;margin:0;padding:8px 12px;font-size:14px}
+.report-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}.report-actions select,.report-actions button{width:auto;margin:0}.actions{display:flex;gap:6px}.actions button{width:auto;margin:0;padding:8px 12px;font-size:14px}
 .price-preview{background:#f5f7f8;border-radius:10px;padding:12px;margin-top:6px}
 .total-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;font-weight:600}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eceff1;font-size:12px}
@@ -148,9 +151,13 @@ th{background:#f5f7f8}
 <button id="tripCancelBtn" class="btn-secondary" style="display:none" onclick="cancelTripEdit()">取消修改</button>
 </div>
 
-<div class="card">
+<div class="card" id="driverSettlementReportCard">
 <h2>司機本月結算</h2>
 <input id="tripMonth" type="month" onchange="loadTripSummary()">
+<div class="report-actions">
+<button class="btn-green" onclick="exportDriverSettlementExcel()">下載 Excel</button>
+<button onclick="exportDriverSettlementPDF()">下載 PDF</button>
+</div>
 <div class="table-wrap"><table><thead><tr>
 <th>司機</th><th>趟次</th><th>司機薪資</th>
 </tr></thead><tbody id="tripSummaryList"></tbody></table></div>
@@ -198,9 +205,13 @@ th{background:#f5f7f8}
 </tr></thead><tbody id="customerItemList"></tbody></table></div>
 </div>
 
-<div class="card">
+<div class="card" id="customerQuoteReportCard">
 <h2>客戶項目報價／成本報表</h2>
 <select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select>
+<div class="report-actions">
+<button class="btn-green" onclick="exportCustomerQuoteExcel()">下載 Excel</button>
+<button onclick="exportCustomerQuotePDF()">下載 PDF</button>
+</div>
 <div class="table-wrap"><table><thead><tr>
 <th>客戶</th><th>項目</th><th>客戶收費（對外報價）</th><th>司機費（內部成本）</th><th>公司毛利</th>
 </tr></thead><tbody id="customerQuoteReportList"></tbody></table></div>
@@ -420,6 +431,7 @@ async function addCustomerItem(){
   ["itemName","itemCustomerPrice","itemDriverFee","itemNote"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("itemCustomer").value="";
   await loadCustomerItems();
+  await loadCustomerQuoteReport();
   await loadTripItems();
 }
 async function loadCustomerItems(){
@@ -601,6 +613,116 @@ async function loadDashboard(){
   document.getElementById("dashDriverPay").textContent=money(pay);
   document.getElementById("dashGrossProfit").textContent=money(income-pay);
 }
+
+
+function getSelectedReportCustomerName(){
+  const id=document.getElementById("reportCustomer")?.value||"";
+  if(!id)return "全部客戶";
+  return customers.find(c=>String(c.id)===String(id))?.name||"全部客戶";
+}
+
+function downloadBlob(blob, filename){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+window.exportCustomerQuoteExcel=function(){
+  if(typeof XLSX==="undefined"){alert("Excel 匯出元件尚未載入，請重新整理頁面後再試一次。");return}
+  const selected=document.getElementById("reportCustomer")?.value||"";
+  const rows=customerItems
+    .filter(item=>item.active && (!selected || String(item.customer_id)===String(selected)))
+    .map(item=>({
+      "客戶": customers.find(c=>String(c.id)===String(item.customer_id))?.name||"",
+      "項目": item.name||"",
+      "客戶收費（對外報價）": Number(item.customer_price||0),
+      "司機費（內部成本）": Number(item.driver_fee||0),
+      "公司毛利": Number(item.customer_price||0)-Number(item.driver_fee||0),
+      "備註": item.note||""
+    }));
+  if(!rows.length){alert("目前沒有可匯出的客戶項目資料。");return}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:18},{wch:24},{wch:20},{wch:20},{wch:16},{wch:30}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"客戶報價成本");
+  const name=(getSelectedReportCustomerName()==="全部客戶"?"全部客戶":getSelectedReportCustomerName()).replace(/[\\/:*?"<>|]/g,"_");
+  XLSX.writeFile(wb,`客戶報價成本報表_${name}_${currentMonth()}.xlsx`);
+};
+
+async function exportElementToPDF(elementId, filename, orientation="landscape"){
+  if(typeof html2canvas==="undefined" || !window.jspdf){
+    alert("PDF 匯出元件尚未載入，請重新整理頁面後再試一次。\n若仍無法下載，請確認網路連線。");
+    return;
+  }
+  const element=document.getElementById(elementId);
+  if(!element){alert("找不到報表內容。");return}
+  const canvas=await html2canvas(element,{scale:2,backgroundColor:"#ffffff",useCORS:true,windowWidth:element.scrollWidth});
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation,unit:"mm",format:"a4"});
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const margin=8;
+  const imgW=pageW-margin*2;
+  const pxPerMm=canvas.width/imgW;
+  const pageCanvasH=Math.floor((pageH-margin*2)*pxPerMm);
+  let offsetY=0;
+  let page=0;
+  while(offsetY<canvas.height){
+    const sliceH=Math.min(pageCanvasH,canvas.height-offsetY);
+    const slice=document.createElement("canvas");
+    slice.width=canvas.width;
+    slice.height=sliceH;
+    const ctx=slice.getContext("2d");
+    ctx.drawImage(canvas,0,offsetY,canvas.width,sliceH,0,0,canvas.width,sliceH);
+    const imgH=sliceH/pxPerMm;
+    if(page>0)pdf.addPage();
+    pdf.addImage(slice.toDataURL("image/png"),"PNG",margin,margin,imgW,imgH,"FAST");
+    offsetY+=sliceH;
+    page++;
+  }
+  pdf.save(filename);
+}
+
+window.exportCustomerQuotePDF=async function(){
+  const name=getSelectedReportCustomerName().replace(/[\\/:*?"<>|]/g,"_");
+  await exportElementToPDF("customerQuoteReportCard",`客戶報價成本報表_${name}_${currentMonth()}.pdf`,`landscape`);
+};
+
+window.exportDriverSettlementExcel=function(){
+  if(typeof XLSX==="undefined"){alert("Excel 匯出元件尚未載入，請重新整理頁面後再試一次。");return}
+  const month=document.getElementById("tripMonth")?.value||currentMonth();
+  const {start,next}=monthRange(month);
+  const rows=(window._tripCache||[])
+    .filter(item=>item.trip_date>=start && item.trip_date<next)
+    .map(item=>({
+      "日期": item.trip_date||"",
+      "司機": item.employees?.name||"",
+      "車牌": employees.find(e=>String(e.id)===String(item.employee_id))?.license_plate||"",
+      "客戶": item.customers?.name||"",
+      "項目": item.customer_items?.name||"",
+      "地點／說明": item.description||"",
+      "趟數": Number(item.quantity||0),
+      "客戶收入": Number(item.customer_price||0)*Number(item.quantity||0),
+      "司機薪資": Number(item.driver_fee||0)*Number(item.quantity||0),
+      "公司毛利": (Number(item.customer_price||0)-Number(item.driver_fee||0))*Number(item.quantity||0)
+    }));
+  if(!rows.length){alert("這個月份目前沒有趟次資料。");return}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:12},{wch:14},{wch:14},{wch:20},{wch:22},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,"司機趟次");
+  XLSX.writeFile(wb,`司機趟次結算_${month}.xlsx`);
+};
+
+window.exportDriverSettlementPDF=async function(){
+  const month=document.getElementById("tripMonth")?.value||currentMonth();
+  await exportElementToPDF("driverSettlementReportCard",`司機本月結算_${month}.pdf`,`landscape`);
+};
 
 async function addQuotation(){
   const number=document.getElementById("qNumber").value.trim();

@@ -4,1247 +4,643 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>晨安企業｜內帳管理系統</title>
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <style>
-* {
-box-sizing: border-box;
-}
-
-body {
-margin: 0;
-font-family: -apple-system, BlinkMacSystemFont,
-"Segoe UI", "Microsoft JhengHei", sans-serif;
-background: #f4f6f8;
-color: #263238;
-}
-
-header {
-background: linear-gradient(135deg, #263238, #455a64);
-color: white;
-padding: 22px;
-text-align: center;
-}
-
-header h1 {
-margin: 0;
-font-size: 26px;
-}
-
-header p {
-margin: 6px 0 0;
-opacity: .8;
-}
-
-.container {
-max-width: 1100px;
-margin: auto;
-padding: 18px;
-}
-
-.card {
-background: white;
-border-radius: 18px;
-padding: 20px;
-margin-bottom: 18px;
-box-shadow: 0 5px 20px rgba(0,0,0,.07);
-}
-
-input,
-select,
-textarea,
-button {
-width: 100%;
-padding: 12px;
-margin: 6px 0;
-border-radius: 10px;
-border: 1px solid #d5dadd;
-font-size: 16px;
-}
-
-textarea {
-min-height: 80px;
-}
-
-button {
-border: 0;
-background: #37474f;
-color: white;
-cursor: pointer;
-font-weight: 600;
-}
-
-button:hover {
-opacity: .9;
-}
-
-.btn-danger {
-background: #b71c1c;
-}
-
-.btn-green {
-background: #2e7d32;
-}
-
-.tabs {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 8px;
-margin-bottom: 16px;
-}
-
-.tabs button {
-margin: 0;
-background: white;
-color: #37474f;
-border: 1px solid #cfd8dc;
-}
-
-.tabs button.active {
-background: #37474f;
-color: white;
-}
-
-.section {
-display: none;
-}
-
-.section.active {
-display: block;
-}
-
-.grid {
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 10px;
-}
-
-.summary {
-display: grid;
-grid-template-columns: repeat(3, 1fr);
-gap: 12px;
-}
-
-.summary-box {
-padding: 18px;
-border-radius: 14px;
-background: #eceff1;
-text-align: center;
-}
-
-.summary-box strong {
-display: block;
-font-size: 22px;
-margin-top: 5px;
-}
-
-table {
-width: 100%;
-border-collapse: collapse;
-margin-top: 15px;
-font-size: 14px;
-}
-
-th,
-td {
-border-bottom: 1px solid #eceff1;
-padding: 10px;
-text-align: left;
-white-space: nowrap;
-}
-
-th {
-background: #f5f7f8;
-}
-
-.table-wrap {
-overflow-x: auto;
-}
-
-#loginScreen {
-max-width: 430px;
-margin: 60px auto;
-}
-
-#app {
-display: none;
-}
-
-.logout {
-max-width: 150px;
-margin-left: auto;
-background: #546e7a;
-}
-
-.message {
-text-align: center;
-padding: 10px;
-min-height: 30px;
-}
-
-@media(max-width:700px) {
-.grid,
-.summary {
-grid-template-columns: 1fr;
-}
-
-.tabs {
-grid-template-columns: repeat(2, 1fr);
-}
-}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;background:#f4f6f8;color:#263238}
+header{background:linear-gradient(135deg,#263238,#455a64);color:#fff;padding:22px;text-align:center}
+header h1{margin:0;font-size:26px}
+header p{margin:6px 0 0;opacity:.8}
+.container{max-width:1150px;margin:auto;padding:18px}
+.card{background:#fff;border-radius:18px;padding:20px;margin-bottom:18px;box-shadow:0 5px 20px rgba(0,0,0,.07)}
+input,select,textarea,button{width:100%;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #d5dadd;font-size:16px}
+textarea{min-height:80px;resize:vertical}
+button{border:0;background:#37474f;color:#fff;cursor:pointer;font-weight:600}
+button:hover{opacity:.9}
+.btn-danger{background:#b71c1c}
+.btn-green{background:#2e7d32}
+.btn-secondary{background:#78909c}
+.logout{max-width:150px;margin-left:auto;background:#546e7a}
+.message{text-align:center;padding:10px;min-height:30px}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}
+.tabs button{margin:0;background:#fff;color:#37474f;border:1px solid #cfd8dc}
+.tabs button.active{background:#37474f;color:#fff}
+.section{display:none}.section.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.summary-box{padding:18px;border-radius:14px;background:#eceff1;text-align:center}
+.summary-box strong{display:block;font-size:22px;margin-top:5px}
+.summary-box small{opacity:.7}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;margin-top:15px;font-size:14px}
+th,td{border-bottom:1px solid #eceff1;padding:10px;text-align:left;white-space:nowrap}
+th{background:#f5f7f8}
+.actions{display:flex;gap:6px}.actions button{width:auto;margin:0;padding:8px 12px;font-size:14px}
+.price-preview{background:#f5f7f8;border-radius:10px;padding:12px;margin-top:6px}
+.total-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;font-weight:600}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eceff1;font-size:12px}
+#loginScreen{max-width:430px;margin:60px auto}
+#app{display:none}
+@media(max-width:800px){.summary,.grid-3{grid-template-columns:repeat(2,1fr)}.tabs{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.grid,.summary,.grid-3{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
-
 <body>
-
 <header>
 <h1>晨安企業</h1>
-<p>內帳・薪資・報價管理系統</p>
+<p>內帳・司機趟次・客戶・報價管理系統</p>
 </header>
 
 <div id="loginScreen" class="container">
 <div class="card">
 <h2>管理員登入</h2>
-
-<input
-id="loginEmail"
-type="email"
-placeholder="Email"
->
-
-<input
-id="loginPassword"
-type="password"
-placeholder="密碼"
->
-
+<input id="loginEmail" type="email" placeholder="Email">
+<input id="loginPassword" type="password" placeholder="密碼">
 <button onclick="login()">登入</button>
-
 <div id="loginMessage" class="message"></div>
 </div>
 </div>
 
-
 <div id="app" class="container">
-
 <button class="logout" onclick="logout()">登出</button>
 
 <div class="summary">
-<div class="summary-box">
-本月收入
-<strong id="totalIncome">$0</strong>
-</div>
-
-<div class="summary-box">
-本月支出
-<strong id="totalExpense">$0</strong>
-</div>
-
-<div class="summary-box">
-本月損益
-<strong id="profit">$0</strong>
-</div>
+<div class="summary-box">本月總趟次<strong id="dashTrips">0</strong><small>趟</small></div>
+<div class="summary-box">本月客戶收入<strong id="dashIncome">$0</strong></div>
+<div class="summary-box">本月司機薪資<strong id="dashDriverPay">$0</strong></div>
+<div class="summary-box">本月公司毛利<strong id="dashGrossProfit">$0</strong></div>
 </div>
 
 <br>
 
 <div class="tabs">
-<button class="active" onclick="showTab('transactions',this)">
-收支帳
-</button>
-
-<button onclick="showTab('employees',this)">
-員工
-</button>
-
-<button onclick="showTab('salaries',this)">
-薪資
-</button>
-
-<button onclick="showTab('quotations',this)">
-報價單
-</button>
+<button class="active" onclick="showTab('transactions',this)">收支帳</button>
+<button onclick="showTab('drivers',this)">司機</button>
+<button onclick="showTab('trips',this)">趟次結算</button>
+<button onclick="showTab('customers',this)">客戶</button>
+<button onclick="showTab('quotations',this)">報價單</button>
 </div>
-
 
 <!-- 收支帳 -->
 <section id="transactions" class="section active">
-
 <div class="card">
 <h2>新增收入／支出</h2>
-
 <div class="grid">
-
 <input id="tDate" type="date">
-
-<select id="tType">
-<option value="收入">收入</option>
-<option value="支出">支出</option>
-</select>
-
-<input
-id="tCategory"
-placeholder="類別，例如：銷貨收入、材料費"
->
-
-<input
-id="tDescription"
-placeholder="內容說明"
->
-
-<input
-id="tAmount"
-type="number"
-placeholder="金額"
->
-
-<select id="tPayment">
-<option value="現金">現金</option>
-<option value="銀行轉帳">銀行轉帳</option>
-<option value="支票">支票</option>
-<option value="其他">其他</option>
-</select>
-
+<select id="tType"><option value="收入">收入</option><option value="支出">支出</option></select>
+<input id="tCategory" placeholder="類別，例如：銷貨收入、材料費">
+<input id="tDescription" placeholder="內容說明">
+<input id="tAmount" type="number" placeholder="金額">
+<select id="tPayment"><option value="現金">現金</option><option value="銀行轉帳">銀行轉帳</option><option value="支票">支票</option><option value="其他">其他</option></select>
 </div>
-
-<textarea
-id="tNote"
-placeholder="備註"
-></textarea>
-
-<button onclick="addTransaction()">
-儲存收支紀錄
-</button>
+<textarea id="tNote" placeholder="備註"></textarea>
+<button onclick="addTransaction()">儲存收支紀錄</button>
 </div>
-
-
 <div class="card">
 <h2>收支紀錄</h2>
-
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>日期</th>
-<th>類型</th>
-<th>類別</th>
-<th>說明</th>
-<th>金額</th>
-<th>付款方式</th>
-</tr>
-</thead>
-
-<tbody id="transactionList"></tbody>
-</table>
+<div class="table-wrap"><table><thead><tr>
+<th>日期</th><th>類型</th><th>類別</th><th>說明</th><th>金額</th><th>付款方式</th>
+</tr></thead><tbody id="transactionList"></tbody></table></div>
 </div>
-</div>
-
 </section>
 
-
-<!-- 員工 -->
-<section id="employees" class="section">
-
+<!-- 司機 -->
+<section id="drivers" class="section">
 <div class="card">
-<h2>新增員工</h2>
-
+<h2>新增司機</h2>
 <div class="grid">
-
-<input
-id="eName"
-placeholder="員工姓名"
->
-
-<input
-id="ePhone"
-placeholder="電話"
->
-
-<input
-id="ePosition"
-placeholder="職稱"
->
-
-<input
-id="eSalary"
-type="number"
-placeholder="底薪"
->
-
-<input
-id="eHireDate"
-type="date"
->
-
+<input id="eName" placeholder="司機姓名">
+<input id="ePhone" placeholder="電話">
+<input id="ePlate" placeholder="車牌號碼，例如 ABC-1234">
 </div>
-
-<textarea
-id="eNote"
-placeholder="備註"
-></textarea>
-
-<button onclick="addEmployee()">
-儲存員工
-</button>
+<textarea id="eNote" placeholder="備註"></textarea>
+<button onclick="addEmployee()">儲存司機</button>
 </div>
-
-
 <div class="card">
-<h2>員工資料</h2>
-
-<div class="table-wrap">
-<table>
-
-<thead>
-<tr>
-<th>姓名</th>
-<th>電話</th>
-<th>職稱</th>
-<th>底薪</th>
-<th>到職日</th>
-</tr>
-</thead>
-
-<tbody id="employeeList"></tbody>
-
-</table>
+<h2>司機資料</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>姓名</th><th>電話</th><th>車牌</th><th>備註</th>
+</tr></thead><tbody id="employeeList"></tbody></table></div>
 </div>
-</div>
-
 </section>
 
-
-<!-- 薪資 -->
-<section id="salaries" class="section">
-
+<!-- 趟次 -->
+<section id="trips" class="section">
 <div class="card">
-<h2>新增薪資</h2>
-
-<select id="sEmployee">
-<option value="">請選擇員工</option>
-</select>
-
+<h2 id="tripFormTitle">新增司機趟次</h2>
 <div class="grid">
-
-<input
-id="sMonth"
-type="month"
->
-
-<input
-id="sBase"
-type="number"
-placeholder="底薪"
->
-
-<input
-id="sOvertime"
-type="number"
-placeholder="加班費"
-value="0"
->
-
-<input
-id="sBonus"
-type="number"
-placeholder="獎金"
-value="0"
->
-
-<input
-id="sDeduction"
-type="number"
-placeholder="扣款"
-value="0"
->
-
-<input
-id="sPaymentDate"
-type="date"
->
-
+<select id="tripDriver"><option value="">請選擇司機</option></select>
+<input id="tripDate" type="date">
+<select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select>
+<select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select>
+<input id="tripQuantity" type="number" min="1" step="1" value="1" placeholder="趟數">
+<input id="tripDescription" placeholder="地點／項目，例如：台北→新竹">
 </div>
-
-<textarea
-id="sNote"
-placeholder="薪資備註"
-></textarea>
-
-<button onclick="addSalary()">
-儲存薪資
-</button>
+<div class="price-preview">
+<div class="total-line"><span>客戶單價</span><span id="tripCustomerPrice">$0</span></div>
+<div class="total-line"><span>司機單價</span><span id="tripDriverFee">$0</span></div>
+<div class="total-line"><span>客戶收入</span><span id="tripCustomerTotal">$0</span></div>
+<div class="total-line"><span>司機薪資</span><span id="tripDriverTotal">$0</span></div>
 </div>
-
+<textarea id="tripNote" placeholder="備註"></textarea>
+<button id="tripSaveBtn" onclick="saveTrip()">儲存趟次</button>
+<button id="tripCancelBtn" class="btn-secondary" style="display:none" onclick="cancelTripEdit()">取消修改</button>
+</div>
 
 <div class="card">
-<h2>薪資紀錄</h2>
-
-<div class="table-wrap">
-<table>
-
-<thead>
-<tr>
-<th>月份</th>
-<th>員工</th>
-<th>底薪</th>
-<th>加班</th>
-<th>獎金</th>
-<th>扣款</th>
-<th>實領</th>
-</tr>
-</thead>
-
-<tbody id="salaryList"></tbody>
-
-</table>
-</div>
+<h2>司機本月結算</h2>
+<input id="tripMonth" type="month" onchange="loadTripSummary()">
+<div class="table-wrap"><table><thead><tr>
+<th>司機</th><th>趟次</th><th>司機薪資</th>
+</tr></thead><tbody id="tripSummaryList"></tbody></table></div>
 </div>
 
+<div class="card">
+<h2>趟次紀錄</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>日期</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>客戶收入</th><th>司機薪資</th><th>操作</th>
+</tr></thead><tbody id="tripList"></tbody></table></div>
+</div>
 </section>
 
+<!-- 客戶 -->
+<section id="customers" class="section">
+<div class="card">
+<h2>新增客戶</h2>
+<div class="grid">
+<input id="cName" placeholder="公司抬頭">
+<input id="cTaxId" placeholder="統一編號">
+<input id="cContact" placeholder="聯絡人">
+<input id="cPhone" placeholder="電話">
+<input id="cAddress" placeholder="地址">
+</div>
+<textarea id="cNote" placeholder="備註"></textarea>
+<button onclick="addCustomer()">儲存客戶</button>
+</div>
+
+<div class="card">
+<h2>新增客戶項目</h2>
+<select id="itemCustomer"><option value="">請選擇客戶</option></select>
+<div class="grid">
+<input id="itemName" placeholder="項目名稱，例如：台北→新竹">
+<input id="itemCustomerPrice" type="number" min="0" step="1" placeholder="客戶收費">
+<input id="itemDriverFee" type="number" min="0" step="1" placeholder="司機費">
+<input id="itemNote" placeholder="備註">
+</div>
+<button onclick="addCustomerItem()">儲存客戶項目</button>
+</div>
+
+<div class="card">
+<h2>客戶與項目</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>客戶</th><th>項目</th><th>客戶收費</th><th>司機費</th><th>狀態</th><th>操作</th>
+</tr></thead><tbody id="customerItemList"></tbody></table></div>
+</div>
+
+<div class="card">
+<h2>客戶項目報價／成本報表</h2>
+<select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select>
+<div class="table-wrap"><table><thead><tr>
+<th>客戶</th><th>項目</th><th>客戶收費（對外報價）</th><th>司機費（內部成本）</th><th>公司毛利</th>
+</tr></thead><tbody id="customerQuoteReportList"></tbody></table></div>
+</div>
+
+<div class="card">
+<h2>客戶資料</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th>
+</tr></thead><tbody id="customerList"></tbody></table></div>
+</div>
+</section>
 
 <!-- 報價單 -->
 <section id="quotations" class="section">
-
 <div class="card">
 <h2>新增客戶報價單</h2>
-
 <div class="grid">
-
-<input
-id="qNumber"
-placeholder="報價單號，例如 Q20260001"
->
-
-<input
-id="qDate"
-type="date"
->
-
-<input
-id="qCustomer"
-placeholder="客戶名稱"
->
-
-<input
-id="qPhone"
-placeholder="客戶電話"
->
-
-<input
-id="qAddress"
-placeholder="客戶地址"
->
-
-<input
-id="qSubtotal"
-type="number"
-placeholder="未稅金額"
->
-
-<input
-id="qTax"
-type="number"
-placeholder="稅額"
-value="0"
->
-
+<input id="qNumber" placeholder="報價單號，例如 Q20260001">
+<input id="qDate" type="date">
+<input id="qCustomer" placeholder="客戶名稱">
+<input id="qPhone" placeholder="客戶電話">
+<input id="qAddress" placeholder="客戶地址">
+<input id="qSubtotal" type="number" placeholder="未稅金額">
+<input id="qTax" type="number" placeholder="稅額" value="0">
 </div>
-
-<textarea
-id="qNote"
-placeholder="報價備註"
-></textarea>
-
-<button onclick="addQuotation()">
-建立報價單
-</button>
+<textarea id="qNote" placeholder="報價備註"></textarea>
+<button onclick="addQuotation()">建立報價單</button>
 </div>
-
-
 <div class="card">
 <h2>報價單紀錄</h2>
-
-<div class="table-wrap">
-<table>
-
-<thead>
-<tr>
-<th>單號</th>
-<th>日期</th>
-<th>客戶</th>
-<th>未稅</th>
-<th>稅額</th>
-<th>總額</th>
-<th>狀態</th>
-</tr>
-</thead>
-
-<tbody id="quotationList"></tbody>
-
-</table>
+<div class="table-wrap"><table><thead><tr>
+<th>單號</th><th>日期</th><th>客戶</th><th>未稅</th><th>稅額</th><th>總額</th><th>狀態</th>
+</tr></thead><tbody id="quotationList"></tbody></table></div>
 </div>
-</div>
-
 </section>
-
 </div>
-
 
 <script>
+const SUPABASE_URL = "https://pvrvrkptocddkcsbbzsg.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY";
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-const SUPABASE_URL =
-"https://pvrvrkptocddkcsbbzsg.supabase.co"
+let employees = [];
+let customers = [];
+let customerItems = [];
+let editingTripId = null;
 
-const SUPABASE_PUBLISHABLE_KEY =
-"sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY"
-
-const client =
-window.supabase.createClient(
-SUPABASE_URL,
-SUPABASE_PUBLISHABLE_KEY
-);
-
-
-function money(value) {
-return new Intl.NumberFormat(
-"zh-TW",
-{
-style: "currency",
-currency: "TWD",
-maximumFractionDigits: 0
+function money(value){
+  return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value)||0);
 }
-).format(Number(value) || 0);
+function safe(value){
+  const div=document.createElement("div");
+  div.textContent=value ?? "";
+  return div.innerHTML;
 }
-
-
-function safe(value) {
-const div = document.createElement("div");
-div.textContent = value ?? ""
-return div.innerHTML;
+function today(){
+  const d=new Date();
+  const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+  return local.toISOString().slice(0,10);
 }
-
-
-/* 登入 */
-window.login = async function () {
-
-const email =
-document.getElementById("loginEmail").value.trim();
-
-const password =
-document.getElementById("loginPassword").value;
-
-if (!email || !password) {
-alert("請輸入 Email 和密碼");
-return;
+function currentMonth(){
+  return today().slice(0,7);
+}
+function monthRange(month){
+  const [y,m]=month.split("-").map(Number);
+  const start=`${y}-${String(m).padStart(2,"0")}-01`;
+  const nextDate=new Date(y,m,1);
+  const next=`${nextDate.getFullYear()}-${String(nextDate.getMonth()+1).padStart(2,"0")}-01`;
+  return {start,next};
 }
 
-const { error } =
-await client.auth.signInWithPassword({
-email: email,
-password: password
-});
-
-if (error) {
-alert("登入失敗：" + error.message);
-return;
+window.login=async function(){
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  if(!email||!password){alert("請輸入 Email 和密碼");return}
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error){alert("登入失敗："+error.message);return}
+  await showApp();
+};
+window.logout=async function(){
+  await client.auth.signOut();
+  document.getElementById("app").style.display="none";
+  document.getElementById("loginScreen").style.display="block";
+  document.getElementById("loginPassword").value="";
+};
+async function showApp(){
+  document.getElementById("loginScreen").style.display="none";
+  document.getElementById("app").style.display="block";
+  document.getElementById("tDate").value=today();
+  document.getElementById("tripDate").value=today();
+  document.getElementById("tripMonth").value=currentMonth();
+  document.getElementById("qDate").value=today();
+  await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
+  await loadDashboard();
+  await loadTripSummary();
+  await loadTrips();
 }
-
-showApp();
+window.showTab=function(tabName,button){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  const section=document.getElementById(tabName);
+  if(section)section.classList.add("active");
+  if(button)button.classList.add("active");
 };
 
+async function addTransaction(){
+  const date=document.getElementById("tDate").value;
+  const type=document.getElementById("tType").value;
+  const category=document.getElementById("tCategory").value.trim();
+  const description=document.getElementById("tDescription").value.trim();
+  const amount=Number(document.getElementById("tAmount").value||0);
+  const payment=document.getElementById("tPayment").value;
+  const note=document.getElementById("tNote").value.trim();
+  if(!date){alert("請選擇日期");return}
+  if(!amount){alert("請輸入金額");return}
+  const {error}=await client.from("transactions").insert({
+    transaction_date:date,type,category,description,amount,payment_method:payment,note
+  });
+  if(error){alert("儲存失敗："+error.message);return}
+  alert("收支紀錄儲存成功");
+  ["tCategory","tDescription","tAmount","tNote"].forEach(id=>document.getElementById(id).value="");
+  await loadTransactions();
+}
+async function loadTransactions(){
+  const {data,error}=await client.from("transactions").select("*").order("transaction_date",{ascending:false});
+  if(error){console.error(error);return}
+  const list=document.getElementById("transactionList"); list.innerHTML="";
+  (data||[]).forEach(item=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(item.transaction_date)}</td><td>${safe(item.type)}</td><td>${safe(item.category)}</td><td>${safe(item.description)}</td><td>${money(item.amount)}</td><td>${safe(item.payment_method)}</td>`;
+    list.appendChild(row);
+  });
+}
 
-/* 登出 */
-window.logout = async function () {
+async function addEmployee(){
+  const name=document.getElementById("eName").value.trim();
+  const phone=document.getElementById("ePhone").value.trim();
+  const license_plate=document.getElementById("ePlate").value.trim();
+  const note=document.getElementById("eNote").value.trim();
+  if(!name){alert("請輸入司機姓名");return}
+  const {error}=await client.from("employees").insert({
+    name,phone,license_plate,position:"司機",base_salary:0,hire_date:null,note
+  });
+  if(error){alert("司機儲存失敗："+error.message);return}
+  alert("司機資料儲存成功");
+  document.getElementById("eName").value="";
+  document.getElementById("ePhone").value="";
+  document.getElementById("ePlate").value="";
+  document.getElementById("eNote").value="";
+  await loadEmployees();
+}
+async function loadEmployees(){
+  const {data,error}=await client.from("employees").select("*").order("created_at",{ascending:false});
+  if(error){console.error(error);return}
+  employees=data||[];
+  const list=document.getElementById("employeeList"); list.innerHTML="";
+  const select=document.getElementById("tripDriver");
+  select.innerHTML='<option value="">請選擇司機</option>';
+  employees.forEach(employee=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(employee.name)}</td><td>${safe(employee.phone)}</td><td>${safe(employee.license_plate)}</td><td>${safe(employee.note)}</td>`;
+    list.appendChild(row);
+    const opt=document.createElement("option"); opt.value=employee.id; opt.textContent=employee.license_plate ? `${employee.name}｜${employee.license_plate}` : employee.name; select.appendChild(opt);
+  });
+}
 
-await client.auth.signOut();
-
-document.getElementById("app").style.display = "none"
-
-document.getElementById("loginScreen").style.display = "block"
-
-document.getElementById("loginPassword").value = ""
+async function addCustomer(){
+  const name=document.getElementById("cName").value.trim();
+  const tax_id=document.getElementById("cTaxId").value.trim();
+  const contact_name=document.getElementById("cContact").value.trim();
+  const phone=document.getElementById("cPhone").value.trim();
+  const address=document.getElementById("cAddress").value.trim();
+  const note=document.getElementById("cNote").value.trim();
+  if(!name){alert("請輸入客戶名稱");return}
+  const {error}=await client.from("customers").insert({name,tax_id,contact_name,phone,address,note});
+  if(error){alert("客戶儲存失敗："+error.message);return}
+  alert("客戶儲存成功");
+  ["cName","cTaxId","cContact","cPhone","cAddress","cNote"].forEach(id=>document.getElementById(id).value="");
+  await loadCustomers();
+}
+async function loadCustomers(){
+  const {data,error}=await client.from("customers").select("*").order("created_at",{ascending:false});
+  if(error){console.error(error);return}
+  customers=data||[];
+  const list=document.getElementById("customerList"); list.innerHTML="";
+  const selects=[document.getElementById("itemCustomer"),document.getElementById("tripCustomer")];
+  selects.forEach(select=>select.innerHTML='<option value="">請選擇客戶</option>');
+  const reportCustomer=document.getElementById("reportCustomer");
+  reportCustomer.innerHTML='<option value="">全部客戶</option>';
+  customers.forEach(customer=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(customer.name)}</td><td>${safe(customer.tax_id)}</td><td>${safe(customer.contact_name)}</td><td>${safe(customer.phone)}</td><td>${safe(customer.address)}</td><td>${safe(customer.note)}</td>`;
+    list.appendChild(row);
+    selects.forEach(select=>{
+      const opt=document.createElement("option");opt.value=customer.id;opt.textContent=customer.name;select.appendChild(opt);
+    });
+    const reportOpt=document.createElement("option");
+    reportOpt.value=customer.id;
+    reportOpt.textContent=customer.name;
+    reportCustomer.appendChild(reportOpt);
+  });
+  await loadCustomerItems();
+  await loadCustomerQuoteReport();
+}
+async function addCustomerItem(){
+  const customer_id=document.getElementById("itemCustomer").value;
+  const name=document.getElementById("itemName").value.trim();
+  const customer_price=Number(document.getElementById("itemCustomerPrice").value||0);
+  const driver_fee=Number(document.getElementById("itemDriverFee").value||0);
+  const note=document.getElementById("itemNote").value.trim();
+  if(!customer_id){alert("請選擇客戶");return}
+  if(!name){alert("請輸入項目名稱");return}
+  const {error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note,active:true});
+  if(error){alert("客戶項目儲存失敗："+error.message);return}
+  alert("客戶項目儲存成功");
+  ["itemName","itemCustomerPrice","itemDriverFee","itemNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("itemCustomer").value="";
+  await loadCustomerItems();
+  await loadTripItems();
+}
+async function loadCustomerItems(){
+  const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
+  if(error){console.error(error);return}
+  customerItems=data||[];
+  const list=document.getElementById("customerItemList"); list.innerHTML="";
+  customerItems.forEach(item=>{
+    const customerName=item.customers?item.customers.name:"";
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${money(item.customer_price)}</td><td>${money(item.driver_fee)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
+    list.appendChild(row);
+  });
+}
+window.deleteCustomerItem=async function(id){
+  if(!confirm("確定要刪除這個客戶項目嗎？"))return;
+  const {error}=await client.from("customer_items").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  await loadCustomerItems(); await loadTripItems();
 };
 
-
-/* 顯示系統 */
-async function showApp() {
-
-document.getElementById("loginScreen").style.display = "none"
-
-document.getElementById("app").style.display = "block"
-
-await loadTransactions();
-await loadEmployees();
-await loadSalaries();
-await loadQuotations();
-}
-
-
-/* 頁籤 */
-window.showTab = function(tabName, button) {
-
-document.querySelectorAll(".section")
-.forEach(function(section) {
-section.classList.remove("active");
-});
-
-document.querySelectorAll(".tabs button")
-.forEach(function(btn) {
-btn.classList.remove("active");
-});
-
-const selectedTab =
-document.getElementById(tabName);
-
-if (selectedTab) {
-selectedTab.classList.add("active");
-}
-
-if (button) {
-button.classList.add("active");
-}
+window.loadCustomerQuoteReport=async function(){
+  const customerId=document.getElementById("reportCustomer")?.value||"";
+  const list=document.getElementById("customerQuoteReportList");
+  if(!list)return;
+  const rows=customerItems.filter(item=>item.active && (!customerId || String(item.customer_id)===String(customerId)));
+  list.innerHTML="";
+  rows.forEach(item=>{
+    const customerName=item.customers?.name||customers.find(c=>String(c.id)===String(item.customer_id))?.name||"";
+    const customerPrice=Number(item.customer_price||0);
+    const driverFee=Number(item.driver_fee||0);
+    const grossProfit=customerPrice-driverFee;
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${money(customerPrice)}</td><td>${money(driverFee)}</td><td>${money(grossProfit)}</td>`;
+    list.appendChild(row);
+  });
+  if(!rows.length)list.innerHTML='<tr><td colspan="5">目前沒有可用的客戶項目</td></tr>';
 };
 
-
-/* =========================
-收支帳
-========================= */
-
-window.addTransaction = async function () {
-
-const date =
-document.getElementById("tDate").value;
-
-const type =
-document.getElementById("tType").value;
-
-const category =
-document.getElementById("tCategory").value.trim();
-
-const description =
-document.getElementById("tDescription").value.trim();
-
-const amount =
-Number(document.getElementById("tAmount").value || 0);
-
-const payment =
-document.getElementById("tPayment").value;
-
-const note =
-document.getElementById("tNote").value.trim();
-
-if (!date) {
-alert("請選擇日期");
-return;
-}
-
-if (!amount) {
-alert("請輸入金額");
-return;
-}
-
-const { error } =
-await client
-.from("transactions")
-.insert({
-transaction_date: date,
-type: type,
-category: category,
-description: description,
-amount: amount,
-payment_method: payment,
-note: note
-});
-
-if (error) {
-alert("儲存失敗：" + error.message);
-return;
-}
-
-alert("收支紀錄儲存成功");
-
-document.getElementById("tCategory").value = ""
-document.getElementById("tDescription").value = ""
-document.getElementById("tAmount").value = ""
-document.getElementById("tNote").value = ""
-
-await loadTransactions();
+window.loadTripItems=async function(){
+  const customerId=document.getElementById("tripCustomer").value;
+  const select=document.getElementById("tripItem");
+  select.innerHTML='<option value="">請選擇項目</option>';
+  customerItems.filter(i=>String(i.customer_id)===String(customerId)&&i.active).forEach(item=>{
+    const opt=document.createElement("option");
+    opt.value=item.id;opt.textContent=item.name;
+    opt.dataset.customerPrice=item.customer_price;opt.dataset.driverFee=item.driver_fee;
+    select.appendChild(opt);
+  });
+  previewTripPrice();
 };
-
-
-async function loadTransactions() {
-
-const { data, error } =
-await client
-.from("transactions")
-.select("*")
-.order("transaction_date", {
-ascending: false
-});
-
-if (error) {
-console.error(error);
-return;
-}
-
-const list =
-document.getElementById("transactionList");
-
-list.innerHTML = ""
-
-let income = 0;
-let expense = 0;
-
-const now = new Date();
-
-const currentMonth =
-now.getFullYear() +
-"-" +
-String(now.getMonth() + 1).padStart(2, "0");
-
-data.forEach(function(item) {
-
-const row =
-document.createElement("tr");
-
-row.innerHTML =
-"<td>" + safe(item.transaction_date) + "</td>" +
-"<td>" + safe(item.type) + "</td>" +
-"<td>" + safe(item.category) + "</td>" +
-"<td>" + safe(item.description) + "</td>" +
-"<td>" + money(item.amount) + "</td>" +
-"<td>" + safe(item.payment_method) + "</td>"
-
-list.appendChild(row);
-
-if (
-item.transaction_date &&
-item.transaction_date.startsWith(currentMonth)
-) {
-
-if (item.type === "收入") {
-income += Number(item.amount || 0);
-}
-
-if (item.type === "支出") {
-expense += Number(item.amount || 0);
-}
-}
-});
-
-document.getElementById("totalIncome").textContent =
-money(income);
-
-document.getElementById("totalExpense").textContent =
-money(expense);
-
-document.getElementById("profit").textContent =
-money(income - expense);
-}
-
-
-/* =========================
-員工
-========================= */
-
-window.addEmployee = async function () {
-
-const name =
-document.getElementById("eName").value.trim();
-
-const phone =
-document.getElementById("ePhone").value.trim();
-
-const position =
-document.getElementById("ePosition").value.trim();
-
-const baseSalary =
-Number(document.getElementById("eSalary").value || 0);
-
-const hireDate =
-document.getElementById("eHireDate").value || null;
-
-const note =
-document.getElementById("eNote").value.trim();
-
-if (!name) {
-alert("請輸入員工姓名");
-return;
-}
-
-const { error } =
-await client
-.from("employees")
-.insert({
-name: name,
-phone: phone,
-position: position,
-base_salary: baseSalary,
-hire_date: hireDate,
-note: note
-});
-
-if (error) {
-alert("員工儲存失敗：" + error.message);
-return;
-}
-
-alert("員工資料儲存成功");
-
-document.getElementById("eName").value = ""
-document.getElementById("ePhone").value = ""
-document.getElementById("ePosition").value = ""
-document.getElementById("eSalary").value = ""
-document.getElementById("eHireDate").value = ""
-document.getElementById("eNote").value = ""
-
-await loadEmployees();
+window.previewTripPrice=function(){
+  const select=document.getElementById("tripItem");
+  const opt=select.options[select.selectedIndex];
+  const customerPrice=Number(opt?.dataset.customerPrice||0);
+  const driverFee=Number(opt?.dataset.driverFee||0);
+  const quantity=Number(document.getElementById("tripQuantity").value||0);
+  document.getElementById("tripCustomerPrice").textContent=money(customerPrice);
+  document.getElementById("tripDriverFee").textContent=money(driverFee);
+  document.getElementById("tripCustomerTotal").textContent=money(customerPrice*quantity);
+  document.getElementById("tripDriverTotal").textContent=money(driverFee*quantity);
 };
+document.getElementById("tripQuantity").addEventListener("input",previewTripPrice);
 
-
-async function loadEmployees() {
-
-const { data, error } =
-await client
-.from("employees")
-.select("*")
-.order("created_at", {
-ascending: false
-});
-
-if (error) {
-console.error(error);
-return;
-}
-
-const list =
-document.getElementById("employeeList");
-
-list.innerHTML = ""
-
-const salarySelect =
-document.getElementById("sEmployee");
-
-salarySelect.innerHTML =
-'<option value="">請選擇員工</option>';
-
-data.forEach(function(employee) {
-
-const row =
-document.createElement("tr");
-
-row.innerHTML =
-"<td>" + safe(employee.name) + "</td>" +
-"<td>" + safe(employee.phone) + "</td>" +
-"<td>" + safe(employee.position) + "</td>" +
-"<td>" + money(employee.base_salary) + "</td>" +
-"<td>" + safe(employee.hire_date) + "</td>"
-
-list.appendChild(row);
-
-const option =
-document.createElement("option");
-
-option.value = employee.id;
-option.textContent = employee.name;
-
-option.dataset.salary =
-employee.base_salary || 0;
-
-salarySelect.appendChild(option);
-});
-}
-
-
-document
-.getElementById("sEmployee")
-.addEventListener("change", function () {
-
-const option =
-this.options[this.selectedIndex];
-
-if (option && option.dataset.salary) {
-document.getElementById("sBase").value =
-option.dataset.salary;
-}
-});
-
-
-/* =========================
-薪資
-========================= */
-
-window.addSalary = async function () {
-
-const employeeId =
-document.getElementById("sEmployee").value;
-
-const month =
-document.getElementById("sMonth").value;
-
-const base =
-Number(document.getElementById("sBase").value || 0);
-
-const overtime =
-Number(document.getElementById("sOvertime").value || 0);
-
-const bonus =
-Number(document.getElementById("sBonus").value || 0);
-
-const deduction =
-Number(document.getElementById("sDeduction").value || 0);
-
-const paymentDate =
-document.getElementById("sPaymentDate").value || null;
-
-const note =
-document.getElementById("sNote").value.trim();
-
-if (!employeeId) {
-alert("請選擇員工");
-return;
-}
-
-if (!month) {
-alert("請選擇薪資月份");
-return;
-}
-
-const netSalary =
-base + overtime + bonus - deduction;
-
-const salaryMonth =
-month + "-01"
-
-const { error } =
-await client
-.from("salaries")
-.insert({
-employee_id: employeeId,
-salary_month: salaryMonth,
-base_salary: base,
-overtime_pay: overtime,
-bonus: bonus,
-deduction: deduction,
-net_salary: netSalary,
-payment_date: paymentDate,
-note: note
-});
-
-if (error) {
-alert("薪資儲存失敗：" + error.message);
-return;
-}
-
-alert("薪資儲存成功，實領 " + money(netSalary));
-
-document.getElementById("sEmployee").value = ""
-document.getElementById("sMonth").value = ""
-document.getElementById("sBase").value = ""
-document.getElementById("sOvertime").value = "0"
-document.getElementById("sBonus").value = "0"
-document.getElementById("sDeduction").value = "0"
-document.getElementById("sPaymentDate").value = ""
-document.getElementById("sNote").value = ""
-
-await loadSalaries();
+window.saveTrip=async function(){
+  const employee_id=document.getElementById("tripDriver").value;
+  const trip_date=document.getElementById("tripDate").value;
+  const customer_id=document.getElementById("tripCustomer").value;
+  const customer_item_id=document.getElementById("tripItem").value||null;
+  const quantity=Number(document.getElementById("tripQuantity").value||0);
+  const description=document.getElementById("tripDescription").value.trim();
+  const note=document.getElementById("tripNote").value.trim();
+  const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
+  if(!employee_id){alert("請選擇司機");return}
+  if(!trip_date){alert("請選擇日期");return}
+  if(!customer_id){alert("請選擇客戶");return}
+  if(!customer_item_id||!item){alert("請選擇客戶項目");return}
+  if(quantity<=0){alert("趟數必須大於 0");return}
+  const payload={
+    employee_id,trip_date,customer_id,customer_item_id,description,
+    quantity,customer_price:Number(item.customer_price||0),driver_fee:Number(item.driver_fee||0),note
+  };
+  let result;
+  if(editingTripId){
+    result=await client.from("driver_trips").update(payload).eq("id",editingTripId);
+  }else{
+    result=await client.from("driver_trips").insert(payload);
+  }
+  if(result.error){alert("儲存失敗："+result.error.message);return}
+  alert(editingTripId?"趟次修改成功":"趟次儲存成功");
+  cancelTripEdit();
+  await loadTrips(); await loadTripSummary(); await loadDashboard();
 };
-
-
-async function loadSalaries() {
-
-const { data, error } =
-await client
-.from("salaries")
-.select(`
-*,
-employees (
-name
-)
-`)
-.order("salary_month", {
-ascending: false
-});
-
-if (error) {
-console.error(error);
-return;
-}
-
-const list =
-document.getElementById("salaryList");
-
-list.innerHTML = ""
-
-data.forEach(function(item) {
-
-const row =
-document.createElement("tr");
-
-const month =
-item.salary_month
-? item.salary_month.substring(0, 7)
-: ""
-
-const employeeName =
-item.employees
-? item.employees.name
-: ""
-
-row.innerHTML =
-"<td>" + safe(month) + "</td>" +
-"<td>" + safe(employeeName) + "</td>" +
-"<td>" + money(item.base_salary) + "</td>" +
-"<td>" + money(item.overtime_pay) + "</td>" +
-"<td>" + money(item.bonus) + "</td>" +
-"<td>" + money(item.deduction) + "</td>" +
-"<td>" + money(item.net_salary) + "</td>"
-
-list.appendChild(row);
-});
-}
-
-
-/* =========================
-報價單
-========================= */
-
-window.addQuotation = async function () {
-
-const number =
-document.getElementById("qNumber").value.trim();
-
-const date =
-document.getElementById("qDate").value;
-
-const customer =
-document.getElementById("qCustomer").value.trim();
-
-const phone =
-document.getElementById("qPhone").value.trim();
-
-const address =
-document.getElementById("qAddress").value.trim();
-
-const subtotal =
-Number(document.getElementById("qSubtotal").value || 0);
-
-const tax =
-Number(document.getElementById("qTax").value || 0);
-
-const note =
-document.getElementById("qNote").value.trim();
-
-if (!number) {
-alert("請輸入報價單號");
-return;
-}
-
-if (!date) {
-alert("請選擇報價日期");
-return;
-}
-
-if (!customer) {
-alert("請輸入客戶名稱");
-return;
-}
-
-const total =
-subtotal + tax;
-
-const { error } =
-await client
-.from("quotations")
-.insert({
-quote_number: number,
-quote_date: date,
-customer_name: customer,
-customer_phone: phone,
-customer_address: address,
-subtotal: subtotal,
-tax: tax,
-total: total,
-status: "草稿",
-note: note
-});
-
-if (error) {
-alert("報價單建立失敗：" + error.message);
-return;
-}
-
-alert("報價單建立成功");
-
-document.getElementById("qNumber").value = ""
-document.getElementById("qDate").value = ""
-document.getElementById("qCustomer").value = ""
-document.getElementById("qPhone").value = ""
-document.getElementById("qAddress").value = ""
-document.getElementById("qSubtotal").value = ""
-document.getElementById("qTax").value = "0"
-document.getElementById("qNote").value = ""
-
-await loadQuotations();
+window.editTrip=async function(id){
+  const trip=window._tripCache?.find(t=>String(t.id)===String(id));
+  if(!trip)return;
+  editingTripId=id;
+  document.getElementById("tripFormTitle").textContent="修改司機趟次";
+  document.getElementById("tripSaveBtn").textContent="儲存修改";
+  document.getElementById("tripCancelBtn").style.display="block";
+  document.getElementById("tripDriver").value=trip.employee_id;
+  document.getElementById("tripDate").value=trip.trip_date;
+  document.getElementById("tripCustomer").value=trip.customer_id;
+  await loadTripItems();
+  document.getElementById("tripItem").value=trip.customer_item_id||"";
+  document.getElementById("tripQuantity").value=trip.quantity;
+  document.getElementById("tripDescription").value=trip.description||"";
+  document.getElementById("tripNote").value=trip.note||"";
+  previewTripPrice();
+  document.getElementById("trips").scrollIntoView({behavior:"smooth"});
 };
-
-
-async function loadQuotations() {
-
-const { data, error } =
-await client
-.from("quotations")
-.select("*")
-.order("quote_date", {
-ascending: false
-});
-
-if (error) {
-console.error(error);
-return;
+window.cancelTripEdit=function(){
+  editingTripId=null;
+  document.getElementById("tripFormTitle").textContent="新增司機趟次";
+  document.getElementById("tripSaveBtn").textContent="儲存趟次";
+  document.getElementById("tripCancelBtn").style.display="none";
+  document.getElementById("tripDriver").value="";
+  document.getElementById("tripDate").value=today();
+  document.getElementById("tripCustomer").value="";
+  document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
+  document.getElementById("tripQuantity").value=1;
+  document.getElementById("tripDescription").value="";
+  document.getElementById("tripNote").value="";
+  previewTripPrice();
+};
+window.deleteTrip=async function(id){
+  if(!confirm("確定要刪除這筆趟次嗎？"))return;
+  const {error}=await client.from("driver_trips").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  await loadTrips(); await loadTripSummary(); await loadDashboard();
+};
+async function loadTrips(){
+  const {data,error}=await client.from("driver_trips").select(`
+    *,
+    employees(name),
+    customers(name),
+    customer_items(name)
+  `).order("trip_date",{ascending:false}).order("id",{ascending:false});
+  if(error){console.error(error);return}
+  window._tripCache=data||[];
+  const list=document.getElementById("tripList"); list.innerHTML="";
+  window._tripCache.forEach(item=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(Number(item.customer_price||0)*Number(item.quantity||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    list.appendChild(row);
+  });
+}
+async function loadTripSummary(){
+  const month=document.getElementById("tripMonth").value||currentMonth();
+  const {start,next}=monthRange(month);
+  const {data,error}=await client.from("driver_trips").select("employee_id,quantity,driver_fee,employees(name)").gte("trip_date",start).lt("trip_date",next);
+  if(error){console.error(error);return}
+  const grouped={};
+  (data||[]).forEach(item=>{
+    const id=item.employee_id;
+    if(!grouped[id])grouped[id]={name:item.employees?.name||"",trips:0,pay:0};
+    grouped[id].trips+=Number(item.quantity||0);
+    grouped[id].pay+=Number(item.quantity||0)*Number(item.driver_fee||0);
+  });
+  const list=document.getElementById("tripSummaryList");list.innerHTML="";
+  Object.values(grouped).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant")).forEach(item=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(item.name)}</td><td>${safe(item.trips)}</td><td>${money(item.pay)}</td>`;
+    list.appendChild(row);
+  });
+  if(!Object.keys(grouped).length)list.innerHTML='<tr><td colspan="3">本月尚無趟次</td></tr>';
+}
+async function loadDashboard(){
+  const month=currentMonth(),{start,next}=monthRange(month);
+  const {data,error}=await client.from("driver_trips").select("quantity,customer_price,driver_fee").gte("trip_date",start).lt("trip_date",next);
+  if(error){console.error(error);return}
+  let trips=0,income=0,pay=0;
+  (data||[]).forEach(item=>{
+    const q=Number(item.quantity||0);
+    trips+=q;income+=q*Number(item.customer_price||0);pay+=q*Number(item.driver_fee||0);
+  });
+  document.getElementById("dashTrips").textContent=trips;
+  document.getElementById("dashIncome").textContent=money(income);
+  document.getElementById("dashDriverPay").textContent=money(pay);
+  document.getElementById("dashGrossProfit").textContent=money(income-pay);
 }
 
-const list =
-document.getElementById("quotationList");
-
-list.innerHTML = ""
-
-data.forEach(function(item) {
-
-const row =
-document.createElement("tr");
-
-row.innerHTML =
-"<td>" + safe(item.quote_number) + "</td>" +
-"<td>" + safe(item.quote_date) + "</td>" +
-"<td>" + safe(item.customer_name) + "</td>" +
-"<td>" + money(item.subtotal) + "</td>" +
-"<td>" + money(item.tax) + "</td>" +
-"<td>" + money(item.total) + "</td>" +
-"<td>" + safe(item.status) + "</td>"
-
-list.appendChild(row);
-});
+async function addQuotation(){
+  const number=document.getElementById("qNumber").value.trim();
+  const date=document.getElementById("qDate").value;
+  const customer=document.getElementById("qCustomer").value.trim();
+  const phone=document.getElementById("qPhone").value.trim();
+  const address=document.getElementById("qAddress").value.trim();
+  const subtotal=Number(document.getElementById("qSubtotal").value||0);
+  const tax=Number(document.getElementById("qTax").value||0);
+  const note=document.getElementById("qNote").value.trim();
+  if(!number){alert("請輸入報價單號");return}
+  if(!date){alert("請選擇報價日期");return}
+  if(!customer){alert("請輸入客戶名稱");return}
+  const {error}=await client.from("quotations").insert({
+    quote_number:number,quote_date:date,customer_name:customer,customer_phone:phone,
+    customer_address:address,subtotal,tax,total:subtotal+tax,status:"草稿",note
+  });
+  if(error){alert("報價單建立失敗："+error.message);return}
+  alert("報價單建立成功");
+  ["qNumber","qDate","qCustomer","qPhone","qAddress","qSubtotal","qNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("qTax").value="0";
+  document.getElementById("qDate").value=today();
+  await loadQuotations();
+}
+async function loadQuotations(){
+  const {data,error}=await client.from("quotations").select("*").order("quote_date",{ascending:false});
+  if(error){console.error(error);return}
+  const list=document.getElementById("quotationList");list.innerHTML="";
+  (data||[]).forEach(item=>{
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(item.quote_number)}</td><td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td>`;
+    list.appendChild(row);
+  });
 }
 
-
-/* 已登入時自動進入系統 */
-async function checkLogin() {
-
-const {
-data: { session }
-} = await client.auth.getSession();
-
-if (session) {
-await showApp();
+async function checkLogin(){
+  const {data:{session}}=await client.auth.getSession();
+  if(session)await showApp();
 }
-}
-
 checkLogin();
-
 </script>
-
 </body>
 </html>

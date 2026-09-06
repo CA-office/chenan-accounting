@@ -47,6 +47,35 @@ th{background:#f5f7f8}
 #app{display:none}
 @media(max-width:800px){.summary,.grid-3{grid-template-columns:repeat(2,1fr)}.tabs{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.grid,.summary,.grid-3{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}}
+
+/* 左側管理選單 */
+.app-layout{display:flex;gap:18px;align-items:flex-start}
+.sidebar{width:220px;flex:0 0 220px;background:#263238;color:#fff;border-radius:18px;padding:14px;position:sticky;top:18px;box-shadow:0 5px 20px rgba(0,0,0,.12)}
+.sidebar-title{font-size:20px;font-weight:700;padding:12px 10px 16px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:8px}
+.sidebar button{background:transparent;color:#eceff1;text-align:left;margin:2px 0;padding:12px;border-radius:10px}
+.sidebar button:hover,.sidebar button.active{background:#455a64}
+.main-content{flex:1;min-width:0}
+.main-topbar{display:flex;justify-content:flex-end;margin-bottom:12px}
+.calendar-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.calendar-toolbar input,.calendar-toolbar select,.calendar-toolbar button{width:auto;margin:0}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.calendar-weekday{background:#eceff1;padding:10px;text-align:center;font-weight:700;border-radius:8px}
+.calendar-day{min-height:125px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:7px;overflow:hidden}
+.calendar-day.muted{background:#f7f7f7;color:#aaa}
+.calendar-day.today{border:2px solid #37474f}
+.calendar-date{font-weight:700;margin-bottom:5px}
+.calendar-event{display:block;width:100%;text-align:left;background:#eef3f5;color:#263238;border-left:4px solid #607d8b;padding:6px 7px;margin:4px 0;border-radius:6px;font-size:12px;line-height:1.35;cursor:pointer;overflow:hidden}
+.calendar-event:hover{background:#dfe7ea}
+.calendar-event .time{font-weight:700}
+.calendar-event .driver{font-weight:700}
+.calendar-empty{color:#aaa;font-size:12px;padding-top:5px}
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.modal-backdrop.show{display:flex}
+.modal{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal h2{margin-top:0}
+.modal-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #eee;padding:9px 0}.modal-row span:first-child{font-weight:700}
+@media(max-width:900px){.app-layout{display:block}.sidebar{width:100%;position:static;margin-bottom:14px}.sidebar button{width:48%;display:inline-block}.calendar-day{min-height:105px}}
+@media(max-width:600px){.sidebar button{width:100%}.calendar-grid{gap:3px}.calendar-day{min-height:90px;padding:4px}.calendar-event{font-size:11px;padding:4px}.calendar-weekday{font-size:12px;padding:7px}}
 </style>
 </head>
 <body>
@@ -66,18 +95,31 @@ th{background:#f5f7f8}
 </div>
 
 <div id="app" class="container">
-<button class="logout" onclick="logout()">登出</button>
-
+<div class="app-layout">
+<aside class="sidebar">
+<div class="sidebar-title">晨安企業</div>
+<button class="active" onclick="showTab('home',this)">🏠 首頁</button>
+<button onclick="showTab('transactions',this)">💰 收支帳</button>
+<button onclick="showTab('drivers',this)">🚚 司機</button>
+<button onclick="showTab('calendar',this)">📅 司機日曆</button>
+<button onclick="showTab('trips',this)">📋 趟次結算</button>
+<button onclick="showTab('customers',this)">👥 客戶</button>
+<button onclick="showTab('quotations',this)">🧾 報價單</button>
+<button onclick="showTab('reports',this)">📊 報表</button>
+<button onclick="logout()">🚪 登出</button>
+</aside>
+<main class="main-content">
+<div class="main-topbar"><span class="badge">內帳管理系統</span></div>
+<section id="home" class="section active">
 <div class="summary">
 <div class="summary-box">本月總趟次<strong id="dashTrips">0</strong><small>趟</small></div>
 <div class="summary-box">本月客戶收入<strong id="dashIncome">$0</strong></div>
 <div class="summary-box">本月司機薪資<strong id="dashDriverPay">$0</strong></div>
 <div class="summary-box">本月公司毛利<strong id="dashGrossProfit">$0</strong></div>
 </div>
+</section>
 
-<br>
-
-<div class="tabs">
+<div class="tabs" style="display:none">
 <button class="active" onclick="showTab('transactions',this)">收支帳</button>
 <button onclick="showTab('drivers',this)">司機</button>
 <button onclick="showTab('trips',this)">趟次結算</button>
@@ -128,6 +170,24 @@ th{background:#f5f7f8}
 </div>
 </section>
 
+
+<!-- 司機日曆 -->
+<section id="calendar" class="section">
+<div class="card">
+<h2>司機日曆</h2>
+<p style="opacity:.7">查看當月每天的司機、時間、客戶與地點／項目。</p>
+<div class="calendar-toolbar">
+<input id="calendarMonth" type="month" onchange="renderCalendar()">
+<select id="calendarDriver" onchange="renderCalendar()"><option value="">全部司機</option></select>
+<button class="btn-secondary" onclick="goCalendarToday()">今天</button>
+</div>
+</div>
+<div class="card">
+<div id="calendarTitle" style="font-size:20px;font-weight:700;margin-bottom:12px"></div>
+<div class="calendar-grid" id="calendarGrid"></div>
+</div>
+</section>
+
 <!-- 趟次 -->
 <section id="trips" class="section">
 <div class="card">
@@ -135,6 +195,7 @@ th{background:#f5f7f8}
 <div class="grid">
 <select id="tripDriver"><option value="">請選擇司機</option></select>
 <input id="tripDate" type="date">
+<input id="tripTime" type="time">
 <select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select>
 <select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select>
 <input id="tripQuantity" type="number" min="1" step="1" value="1" placeholder="趟數">
@@ -166,7 +227,7 @@ th{background:#f5f7f8}
 <div class="card">
 <h2>趟次紀錄</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>客戶收入</th><th>司機薪資</th><th>操作</th>
+<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>客戶收入</th><th>司機薪資</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -225,6 +286,12 @@ th{background:#f5f7f8}
 </div>
 </section>
 
+
+<!-- 報表 -->
+<section id="reports" class="section">
+<div id="reportsContainer"></div>
+</section>
+
 <!-- 報價單 -->
 <section id="quotations" class="section">
 <div class="card">
@@ -249,6 +316,12 @@ th{background:#f5f7f8}
 </div>
 </section>
 </div>
+
+</main>
+</div>
+</div>
+
+<div id="calendarDetailModal" class="modal-backdrop" onclick="closeCalendarDetail(event)"><div class="modal" onclick="event.stopPropagation()"><h2>趟次詳細資料</h2><div id="calendarDetailBody"></div><button class="btn-secondary" onclick="closeCalendarDetail()">關閉</button></div></div>
 
 <script>
 const SUPABASE_URL = "https://pvrvrkptocddkcsbbzsg.supabase.co";
@@ -303,19 +376,25 @@ async function showApp(){
   document.getElementById("app").style.display="block";
   document.getElementById("tDate").value=today();
   document.getElementById("tripDate").value=today();
+  document.getElementById("tripTime").value="08:00";
+  document.getElementById("calendarMonth").value=currentMonth();
   document.getElementById("tripMonth").value=currentMonth();
   document.getElementById("qDate").value=today();
   await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
   await loadDashboard();
   await loadTripSummary();
   await loadTrips();
+  setupReportsSection();
+  renderCalendarDriverFilter();
+  renderCalendar();
 }
 window.showTab=function(tabName,button){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
   const section=document.getElementById(tabName);
   if(section)section.classList.add("active");
   if(button)button.classList.add("active");
+  if(tabName==="calendar"){renderCalendarDriverFilter();renderCalendar()}
 };
 
 async function addTransaction(){
@@ -499,6 +578,7 @@ document.getElementById("tripQuantity").addEventListener("input",previewTripPric
 window.saveTrip=async function(){
   const employee_id=document.getElementById("tripDriver").value;
   const trip_date=document.getElementById("tripDate").value;
+  const trip_time=document.getElementById("tripTime").value||null;
   const customer_id=document.getElementById("tripCustomer").value;
   const customer_item_id=document.getElementById("tripItem").value||null;
   const quantity=Number(document.getElementById("tripQuantity").value||0);
@@ -511,7 +591,7 @@ window.saveTrip=async function(){
   if(!customer_item_id||!item){alert("請選擇客戶項目");return}
   if(quantity<=0){alert("趟數必須大於 0");return}
   const payload={
-    employee_id,trip_date,customer_id,customer_item_id,description,
+    employee_id,trip_date,trip_time,customer_id,customer_item_id,description,
     quantity,customer_price:Number(item.customer_price||0),driver_fee:Number(item.driver_fee||0),note
   };
   let result;
@@ -534,6 +614,7 @@ window.editTrip=async function(id){
   document.getElementById("tripCancelBtn").style.display="block";
   document.getElementById("tripDriver").value=trip.employee_id;
   document.getElementById("tripDate").value=trip.trip_date;
+  document.getElementById("tripTime").value=trip.trip_time||"";
   document.getElementById("tripCustomer").value=trip.customer_id;
   await loadTripItems();
   document.getElementById("tripItem").value=trip.customer_item_id||"";
@@ -550,6 +631,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripCancelBtn").style.display="none";
   document.getElementById("tripDriver").value="";
   document.getElementById("tripDate").value=today();
+  document.getElementById("tripTime").value="08:00";
   document.getElementById("tripCustomer").value="";
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
   document.getElementById("tripQuantity").value=1;
@@ -575,7 +657,7 @@ async function loadTrips(){
   const list=document.getElementById("tripList"); list.innerHTML="";
   window._tripCache.forEach(item=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(Number(item.customer_price||0)*Number(item.quantity||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(Number(item.customer_price||0)*Number(item.quantity||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
@@ -701,6 +783,7 @@ window.exportDriverSettlementExcel=function(){
     .filter(item=>item.trip_date>=start && item.trip_date<next)
     .map(item=>({
       "日期": item.trip_date||"",
+      "時間": item.trip_time||"",
       "司機": item.employees?.name||"",
       "車牌": employees.find(e=>String(e.id)===String(item.employee_id))?.license_plate||"",
       "客戶": item.customers?.name||"",
@@ -713,7 +796,7 @@ window.exportDriverSettlementExcel=function(){
     }));
   if(!rows.length){alert("這個月份目前沒有趟次資料。");return}
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:12},{wch:14},{wch:14},{wch:20},{wch:22},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
+  ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:22},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"司機趟次");
   XLSX.writeFile(wb,`司機趟次結算_${month}.xlsx`);
@@ -723,6 +806,75 @@ window.exportDriverSettlementPDF=async function(){
   const month=document.getElementById("tripMonth")?.value||currentMonth();
   await exportElementToPDF("driverSettlementReportCard",`司機本月結算_${month}.pdf`,`landscape`);
 };
+
+function setupReportsSection(){
+  const container=document.getElementById("reportsContainer");
+  if(!container)return;
+  const customerCard=document.getElementById("customerQuoteReportCard");
+  const driverCard=document.getElementById("driverSettlementReportCard");
+  if(customerCard && customerCard.parentElement!==container)container.appendChild(customerCard);
+  if(driverCard && driverCard.parentElement!==container)container.appendChild(driverCard);
+}
+function renderCalendarDriverFilter(){
+  const select=document.getElementById("calendarDriver");
+  if(!select)return;
+  const old=select.value;
+  select.innerHTML='<option value="">全部司機</option>';
+  employees.forEach(e=>{
+    const o=document.createElement("option");o.value=e.id;o.textContent=e.license_plate?`${e.name}｜${e.license_plate}`:e.name;select.appendChild(o);
+  });
+  if([...select.options].some(o=>String(o.value)===String(old)))select.value=old;
+}
+function goCalendarToday(){
+  document.getElementById("calendarMonth").value=currentMonth();
+  renderCalendar();
+}
+function renderCalendar(){
+  const grid=document.getElementById("calendarGrid");
+  const month=document.getElementById("calendarMonth")?.value||currentMonth();
+  if(!grid)return;
+  grid.innerHTML="";
+  const driverId=document.getElementById("calendarDriver")?.value||"";
+  const [y,m]=month.split("-").map(Number);
+  const first=new Date(y,m-1,1);
+  const days=new Date(y,m,0).getDate();
+  const startDay=first.getDay();
+  const names=["日","一","二","三","四","五","六"];
+  names.forEach(n=>{const d=document.createElement("div");d.className="calendar-weekday";d.textContent="週"+n;grid.appendChild(d)});
+  for(let i=0;i<startDay;i++){const d=document.createElement("div");d.className="calendar-day muted";grid.appendChild(d)}
+  const trips=(window._tripCache||[]).filter(t=>t.trip_date?.slice(0,7)===month && (!driverId||String(t.employee_id)===String(driverId)));
+  for(let day=1;day<=days;day++){
+    const date=`${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    const cell=document.createElement("div");cell.className="calendar-day"+(date===today()?" today":"");
+    const title=document.createElement("div");title.className="calendar-date";title.textContent=day+"日";cell.appendChild(title);
+    const dayTrips=trips.filter(t=>t.trip_date===date).sort((a,b)=>(a.trip_time||"99:99").localeCompare(b.trip_time||"99:99"));
+    if(!dayTrips.length){const e=document.createElement("div");e.className="calendar-empty";e.textContent="無趟次";cell.appendChild(e)}
+    dayTrips.forEach(t=>{
+      const ev=document.createElement("button");ev.className="calendar-event";
+      const time=t.trip_time||"未排時間", driver=t.employees?.name||"", customer=t.customers?.name||"", place=t.description||t.customer_items?.name||"";
+      ev.innerHTML=`<div class="time">${safe(time)}</div><div class="driver">${safe(driver)}</div><div>${safe(customer)}</div><div>${safe(place)}</div>`;
+      ev.onclick=()=>showCalendarDetail(t);cell.appendChild(ev);
+    });
+    grid.appendChild(cell);
+  }
+  const title=document.getElementById("calendarTitle");
+  if(title)title.textContent=`${y} 年 ${m} 月｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||""):"全部司機"}`;
+}
+function showCalendarDetail(t){
+  const body=document.getElementById("calendarDetailBody");
+  const plate=employees.find(e=>String(e.id)===String(t.employee_id))?.license_plate||"";
+  body.innerHTML=`
+  <div class="modal-row"><span>日期</span><span>${safe(t.trip_date)}</span></div>
+  <div class="modal-row"><span>時間</span><span>${safe(t.trip_time||"未排時間")}</span></div>
+  <div class="modal-row"><span>司機</span><span>${safe(t.employees?.name)} ${plate?"｜"+safe(plate):""}</span></div>
+  <div class="modal-row"><span>客戶</span><span>${safe(t.customers?.name)}</span></div>
+  <div class="modal-row"><span>項目</span><span>${safe(t.customer_items?.name)}</span></div>
+  <div class="modal-row"><span>地點／說明</span><span>${safe(t.description)}</span></div>
+  <div class="modal-row"><span>趟數</span><span>${safe(t.quantity)}</span></div>
+  <div class="modal-row"><span>備註</span><span>${safe(t.note)}</span></div>`;
+  document.getElementById("calendarDetailModal").classList.add("show");
+}
+function closeCalendarDetail(){document.getElementById("calendarDetailModal").classList.remove("show")}
 
 async function addQuotation(){
   const number=document.getElementById("qNumber").value.trim();

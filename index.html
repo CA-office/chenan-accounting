@@ -96,15 +96,20 @@ th{background:#f5f7f8}
 
 
 .form-hint{margin:-6px 0 12px;color:#607d8b;font-size:14px}
-.billing-paper{background:#fff;border:1px solid #d7d7d7;padding:30px;max-width:980px;margin:auto;color:#111}
-.billing-head{text-align:center;margin-bottom:18px}
-.billing-head h1{margin:0;font-size:30px;letter-spacing:8px}
-.billing-head h2{margin:10px 0;font-size:24px;letter-spacing:6px}
-.billing-meta{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:15px;font-weight:600}
-.billing-paper table{margin-top:10px;width:100%;border-collapse:collapse;font-size:14px}
-.billing-paper th,.billing-paper td{border:1px solid #333;padding:9px 7px;text-align:center;white-space:normal}
-.billing-paper th{background:#eee}
-.billing-paper .billing-total td{font-weight:700;font-size:15px}
+.billing-paper{background:#fff;border:1px solid #d7e1ec;padding:30px;max-width:980px;margin:auto;color:#17324d;box-shadow:0 4px 18px rgba(40,70,100,.06)}
+.billing-head{text-align:center;margin-bottom:20px}
+.billing-head h1{margin:0;font-size:32px;letter-spacing:10px;font-weight:800}
+.billing-head h2{margin:10px 0 18px;font-size:25px;letter-spacing:8px;font-weight:800}
+.billing-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:15px;font-weight:600}
+.billing-meta>div{padding:8px 12px;background:#f3f7fb;border-radius:8px}
+.billing-paper table{margin-top:16px;width:100%;border-collapse:separate;border-spacing:0;font-size:14px;overflow:hidden;border:1px solid #d5e0eb;border-radius:8px}
+.billing-paper th,.billing-paper td{border-right:1px solid #d5e0eb;border-bottom:1px solid #d5e0eb;padding:10px 8px;text-align:center;white-space:normal}
+.billing-paper th:last-child,.billing-paper td:last-child{border-right:0}
+.billing-paper tr:last-child td{border-bottom:0}
+.billing-paper th{background:#58718b;color:#fff;font-weight:700}
+.billing-paper .billing-total td{font-weight:700;font-size:15px;background:#f3f7fb}
+.billing-paper .billing-total:last-child td{background:#58718b;color:#fff;font-size:17px}
+.billing-empty{text-align:center;color:#999;padding:50px 10px}
 .billing-empty{text-align:center;color:#999;padding:50px 10px}
 .billing-footer{margin-top:14px;font-size:14px;line-height:1.6}
 .billing-paper .money{text-align:right;white-space:nowrap}
@@ -241,6 +246,7 @@ th{background:#f5f7f8}
 <select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select>
 <input id="tripQuantity" type="number" min="1" step="1" value="1" placeholder="趟數">
 <input id="tripDescription" placeholder="地點／項目，例如：台北→新竹">
+<input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="油資">
 </div>
 <div class="price-preview">
 <div class="total-line"><span>客戶單價</span><span id="tripCustomerPrice">$0</span></div>
@@ -261,14 +267,14 @@ th{background:#f5f7f8}
 <button onclick="exportDriverSettlementPDF()">下載 PDF</button>
 </div>
 <div class="table-wrap"><table><thead><tr>
-<th>司機</th><th>趟次</th><th>司機薪資</th>
+<th>司機</th><th>趟次</th><th>司機薪資</th><th>油資</th><th>司機實領</th>
 </tr></thead><tbody id="tripSummaryList"></tbody></table></div>
 </div>
 
 <div class="card">
 <h2>趟次紀錄</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>客戶收入</th><th>司機薪資</th><th>操作</th>
+<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>客戶收入</th><th>司機薪資</th><th>油資</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -344,7 +350,6 @@ th{background:#f5f7f8}
 </select>
 <input id="billMonth" type="month" onchange="loadBillingPreview()">
 <input id="billDate" type="date">
-<input id="billNumber" placeholder="請款單號，例如 INV202609001">
 <input id="billTaxRate" type="number" min="0" max="100" step="0.1" value="5" placeholder="營業稅率 %">
 <input id="billPayment" placeholder="付款方式／匯款資訊（可留白）">
 </div>
@@ -366,7 +371,7 @@ th{background:#f5f7f8}
 <div class="card">
 <h2>請款單紀錄</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>請款單號</th><th>日期</th><th>客戶</th><th>請款月份</th><th>未稅</th><th>營業稅</th><th>總計</th><th>狀態</th><th>操作</th>
+<th>日期</th><th>客戶</th><th>請款月份</th><th>未稅</th><th>營業稅</th><th>總計</th><th>狀態</th><th>操作</th>
 </tr></thead><tbody id="quotationList"></tbody></table></div>
 </div>
 </section>
@@ -713,6 +718,7 @@ window.saveTrip=async function(){
   const quantity=Number(document.getElementById("tripQuantity").value||0);
   const description=document.getElementById("tripDescription").value.trim();
   const note=document.getElementById("tripNote").value.trim();
+  const fuel_cost=Number(document.getElementById("tripFuel").value||0);
   const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
   if(!employee_id){alert("請選擇司機");return}
   if(!trip_date){alert("請選擇日期");return}
@@ -721,7 +727,7 @@ window.saveTrip=async function(){
   if(quantity<=0){alert("趟數必須大於 0");return}
   const payload={
     employee_id,trip_date,trip_time,customer_id,customer_item_id,description,
-    quantity,customer_price:Number(item.customer_price||0),driver_fee:Number(item.driver_fee||0),note
+    quantity,customer_price:Number(item.customer_price||0),driver_fee:Number(item.driver_fee||0),fuel_cost,note
   };
   let result;
   if(editingTripId){
@@ -744,6 +750,7 @@ window.editTrip=async function(id){
   document.getElementById("tripDriver").value=trip.employee_id;
   document.getElementById("tripDate").value=trip.trip_date;
   document.getElementById("tripTime").value=trip.trip_time||"";
+   document.getElementById("tripFuel").value=Number(trip.fuel_cost||0);
   document.getElementById("tripCustomer").value=trip.customer_id;
   await loadTripItems();
   document.getElementById("tripItem").value=trip.customer_item_id||"";
@@ -765,6 +772,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
   document.getElementById("tripQuantity").value=1;
   document.getElementById("tripDescription").value="";
+  document.getElementById("tripFuel").value=0;
   document.getElementById("tripNote").value="";
   previewTripPrice();
 };
@@ -786,29 +794,31 @@ async function loadTrips(){
   const list=document.getElementById("tripList"); list.innerHTML="";
   window._tripCache.forEach(item=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(Number(item.customer_price||0)*Number(item.quantity||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(Number(item.customer_price||0)*Number(item.quantity||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
 async function loadTripSummary(){
   const month=document.getElementById("tripMonth").value||currentMonth();
   const {start,next}=monthRange(month);
-  const {data,error}=await client.from("driver_trips").select("employee_id,quantity,driver_fee,employees(name)").gte("trip_date",start).lt("trip_date",next);
+  const {data,error}=await client.from("driver_trips").select("employee_id,quantity,driver_fee,fuel_cost,employees(name)").gte("trip_date",start).lt("trip_date",next);
   if(error){console.error(error);return}
   const grouped={};
   (data||[]).forEach(item=>{
     const id=item.employee_id;
-    if(!grouped[id])grouped[id]={name:item.employees?.name||"",trips:0,pay:0};
+    if(!grouped[id])grouped[id]={name:item.employees?.name||"",trips:0,pay:0,fuel:0};
     grouped[id].trips+=Number(item.quantity||0);
     grouped[id].pay+=Number(item.quantity||0)*Number(item.driver_fee||0);
+    grouped[id].fuel+=Number(item.fuel_cost||0);
   });
   const list=document.getElementById("tripSummaryList");list.innerHTML="";
   Object.values(grouped).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant")).forEach(item=>{
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.name)}</td><td>${safe(item.trips)}</td><td>${money(item.pay)}</td>`;
+    const net=item.pay-item.fuel;
+    row.innerHTML=`<td>${safe(item.name)}</td><td>${safe(item.trips)}</td><td>${money(item.pay)}</td><td>${money(item.fuel)}</td><td>${money(net)}</td>`;
     list.appendChild(row);
   });
-  if(!Object.keys(grouped).length)list.innerHTML='<tr><td colspan="3">本月尚無趟次</td></tr>';
+  if(!Object.keys(grouped).length)list.innerHTML='<tr><td colspan="5">本月尚無趟次</td></tr>';
 }
 async function loadDashboard(){
   const month=currentMonth(),{start,next}=monthRange(month);
@@ -921,6 +931,8 @@ window.exportDriverSettlementExcel=function(){
       "趟數": Number(item.quantity||0),
       "客戶收入": Number(item.customer_price||0)*Number(item.quantity||0),
       "司機薪資": Number(item.driver_fee||0)*Number(item.quantity||0),
+      "油資": Number(item.fuel_cost||0),
+      "司機實領": Number(item.driver_fee||0)*Number(item.quantity||0)-Number(item.fuel_cost||0),
       "公司毛利": (Number(item.customer_price||0)-Number(item.driver_fee||0))*Number(item.quantity||0)
     }));
   if(!rows.length){alert("這個月份目前沒有趟次資料。");return}
@@ -1030,6 +1042,12 @@ function monthLabel(ym){
   const [y,m]=ym.split("-");
   return `${Number(m)} 月`;
 }
+function formatBillDate(v){
+  if(!v)return "";
+  const parts=String(v).split("-");
+  return parts.length===3?`${parts[1]}/${parts[2]}`:String(v);
+}
+
 function getBillingCustomer(){
   const id=document.getElementById("billCustomer")?.value;
   return customers.find(c=>String(c.id)===String(id));
@@ -1078,18 +1096,17 @@ function renderBillingPreview(){
   const c=getBillingCustomer();
   const month=document.getElementById("billMonth")?.value||"";
   const date=document.getElementById("billDate")?.value||today();
-  const number=document.getElementById("billNumber")?.value.trim()||"（未設定）";
-  const rate=Number(document.getElementById("billTaxRate")?.value||0);
+    const rate=Number(document.getElementById("billTaxRate")?.value||0);
   const payment=document.getElementById("billPayment")?.value.trim()||"";
   const note=document.getElementById("billNote")?.value.trim()||"";
   const subtotal=billingRows.reduce((s,r)=>s+r.amount,0);
   const tax=Math.round(subtotal*rate/100);
   const total=subtotal+tax;
-  billingPreviewData={customer:c,month,date,number,rate,payment,note,subtotal,tax,total,rows:billingRows};
+  billingPreviewData={customer:c,month,date,rate,payment,note,subtotal,tax,total,rows:billingRows};
   const rows=billingRows.length?billingRows.map((r,i)=>`
     <tr>
       <td>${i+1}</td>
-      <td>${safe(r.date)}</td>
+      <td>${safe(formatBillDate(r.date))}</td>
       <td>${formatTripQuantity(r.qty)}</td>
       <td>${safe(r.area)}</td>
       <td class="money">${money(r.amount)}</td>
@@ -1102,12 +1119,9 @@ function renderBillingPreview(){
     </div>
     <div class="billing-meta">
       <div>公司抬頭：${safe(c?.name||"")}</div>
+      <div>請款月份：${safe(monthLabel(month))}</div>
       <div>統編：${safe(c?.tax_id||"")}</div>
       <div>日期：${safe(date)}</div>
-    </div>
-    <div class="billing-meta">
-      <div>請款月份：${safe(monthLabel(month))}</div>
-      <div>請款單號：${safe(number)}</div>
     </div>
     <table>
       <thead><tr><th>項次</th><th>日期</th><th>趟數／台數</th><th>運送地區／項目</th><th>運送金額</th><th>備註</th></tr></thead>
@@ -1120,7 +1134,7 @@ function renderBillingPreview(){
     ${note?`<div class="billing-footer"><strong>備註：</strong>${safe(note)}</div>`:""}
   `;
 }
-["billDate","billNumber","billTaxRate","billPayment","billNote"].forEach(id=>{
+["billDate","billTaxRate","billPayment","billNote"].forEach(id=>{
   document.addEventListener("input",e=>{if(e.target && e.target.id===id && billingRows.length>=0)renderBillingPreview()});
 });
 
@@ -1129,7 +1143,6 @@ async function saveBillingInvoice(){
   const d=billingPreviewData;
   if(!d?.customer){alert("請先選擇客戶");return}
   if(!d.month){alert("請先選擇請款月份");return}
-  if(!d.number || d.number==="（未設定）"){alert("請輸入請款單號");return}
   if(!d.rows.length){alert("目前沒有可請款的趟次資料");return}
   const snapshot={
     type:"billing_invoice",
@@ -1137,7 +1150,7 @@ async function saveBillingInvoice(){
     customer_tax_id:d.customer.tax_id||"", rate:d.rate
   };
   const {error}=await client.from("quotations").insert({
-    quote_number:d.number,quote_date:d.date,customer_name:d.customer.name,
+    quote_number:"",quote_date:d.date,customer_name:d.customer.name,
     customer_phone:d.customer.phone||"",customer_address:d.customer.address||"",
     subtotal:d.subtotal,tax:d.tax,total:d.total,status:"已建立請款單",
     note:JSON.stringify(snapshot)
@@ -1155,7 +1168,7 @@ async function loadQuotations(){
     let snap=null; try{snap=JSON.parse(item.note||"")}catch(e){}
     const month=snap?.type==="billing_invoice"?snap.month:"";
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.quote_number)}</td><td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${safe(month)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td><td><div class="actions"><button class="btn-secondary" onclick="viewSavedBilling('${String(item.id)}')">查看</button><button class="btn-danger" onclick="deleteBillingInvoice('${String(item.id)}')">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${safe(month)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td><td><div class="actions"><button class="btn-secondary" onclick="viewSavedBilling('${String(item.id)}')">查看</button><button class="btn-danger" onclick="deleteBillingInvoice('${String(item.id)}')">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
@@ -1164,7 +1177,6 @@ async function viewSavedBilling(id){
   if(error){alert("讀取失敗："+error.message);return}
   let snap=null;try{snap=JSON.parse(data.note||"")}catch(e){}
   if(snap?.type!=="billing_invoice"){alert("這筆是舊版報價單資料，無法用新的請款單預覽。");return}
-  document.getElementById("billNumber").value=data.quote_number||"";
   document.getElementById("billDate").value=data.quote_date||today();
   document.getElementById("billMonth").value=snap.month||currentMonth();
   const c=customers.find(x=>x.name===data.customer_name);
@@ -1193,7 +1205,7 @@ window.downloadBillingExcel=function(){
   if(!billingPreviewData){alert("請先選擇客戶與月份");return}
   const d=billingPreviewData;
   const rows=d.rows.map((r,i)=>({
-    "項次":i+1,"日期":r.date,"趟數／台數":r.qty,"運送地區／項目":r.area,
+    "項次":i+1,"日期":formatBillDate(r.date),"趟數／台數":r.qty,"運送地區／項目":r.area,
     "運送金額":r.amount,"備註":r.note
   }));
   rows.push({"項次":"","日期":"","趟數／台數":"","運送地區／項目":"小計","運送金額":d.subtotal,"備註":""});

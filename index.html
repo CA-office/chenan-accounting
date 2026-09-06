@@ -159,7 +159,7 @@ th{background:#f5f7f8}
 <button class="active" onclick="showTab('home',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></span><span>首頁</span></button>
 <button onclick="showTab('transactions',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h10M7 13h4M16 13h1"/></svg></span><span>收支帳</span></button>
 <button onclick="showTab('drivers',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17h14l-1.2-6.5a2 2 0 0 0-2-1.5H8.2a2 2 0 0 0-2 1.5L5 17Z"/><path d="M4 17h16v2H4z"/><circle cx="7.5" cy="19" r="1.5"/><circle cx="16.5" cy="19" r="1.5"/><path d="M8 9V6h8v3"/></svg></span><span>司機</span></button>
-<button onclick="showTab('calendar',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/></svg></span><span>司機日曆</span></button>
+<button onclick="showTab('calendar',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/></svg></span><span>行事曆</span></button>
 <button onclick="showTab('trips',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h3"/><path d="m15 17 1.5 1.5L19 16"/></svg></span><span>趟次結算</span></button>
 <button onclick="showTab('customers',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6"/><path d="M16 6.5a3 3 0 0 1 0 5.5M16 14c2.8.2 4.5 2 5 5"/></svg></span><span>客戶</span></button>
 <button onclick="showTab('quotations',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6M9 18h4"/></svg></span><span>請款單</span></button>
@@ -241,7 +241,7 @@ th{background:#f5f7f8}
 <!-- 司機日曆 -->
 <section id="calendar" class="section">
 <div class="card">
-<h2>司機日曆</h2>
+<h2>行事曆</h2>
 <p style="opacity:.7">每位司機固定顏色，可切換全部司機或單一司機，並查看月、週、日行程。</p>
 <div class="calendar-toolbar">
 <div class="toolbar-field"><label for="calendarMonth">月份</label><input id="calendarMonth" type="month" onchange="syncCalendarFromMonth()"></div>
@@ -290,57 +290,11 @@ th{background:#f5f7f8}
 <button id="tripCancelBtn" class="btn-secondary" style="display:none" onclick="cancelTripEdit()">取消修改</button>
 </div>
 
-<div class="card" id="driverSettlementReportCard">
-<h2>薪資結算</h2>
-<div class="grid" style="margin-bottom:14px">
-<div class="form-field"><label for="tripMonth">結算月份</label><input id="tripMonth" type="month" onchange="loadTripSalaryPreview();loadTripSalaryExclusionCustomers()"></div>
-<div class="form-field"><label for="tripSettlementDriver">選擇司機</label><select id="tripSettlementDriver" onchange="loadTripSalaryPreview();loadSalaryExclusionCustomersForMonth(document.getElementById('tripMonth')?.value||currentMonth())"><option value="">請選擇司機</option></select></div>
-</div>
-<div class="report-actions" style="margin:14px 0 16px">
-<button class="btn-green" type="button" onclick="saveDriverSalarySettlement()">儲存薪資結算</button>
-<button class="btn-secondary" type="button" onclick="exportDriverSettlementPDF()">下載薪資結算 PDF</button>
-<button class="btn-secondary" type="button" onclick="exportDriverSettlementExcel()">下載薪資結算 Excel</button>
-</div>
-<div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
-  <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
-  <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
-  <div id="salaryExclusionCustomers" class="checkbox-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" class="btn-secondary" onclick="applySalaryExclusions(true)">套用不計薪</button>
-    <button type="button" class="btn-secondary" onclick="applySalaryExclusions(false)">恢復計入薪資</button>
-  </div>
-</div>
-
-<div class="card" style="margin:14px 0 0;padding:0;border:0;box-shadow:none;background:transparent">
-<h2 style="margin-top:0">薪資結算預覽</h2>
-<div id="driverSalarySettlementPreview" class="billing-paper">
-  <div class="billing-empty">請先選擇月份與司機</div>
-</div>
-</div>
-
-<div style="margin-top:16px">
-<h3 style="margin:0 0 10px">已儲存的薪資結算</h3>
-<div class="table-wrap"><table><thead><tr><th>月份</th><th>司機</th><th>趟次</th><th>司機薪資</th><th>油資</th><th>總領薪資</th><th>儲存日期</th><th>操作</th></tr></thead><tbody id="driverSalarySettlementList"></tbody></table></div>
-</div>
-</div>
-
 <div class="card">
 <h2>趟次紀錄</h2>
 <div class="grid" style="margin-bottom:14px">
 <div class="form-field"><label for="tripRecordMonth">查詢月份</label><input id="tripRecordMonth" type="month" onchange="loadTrips()"></div>
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
-</div>
-<div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
-  <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
-  <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
-  <div id="tripRecordSalaryExclusionCustomers" class="checkbox-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px"></div>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button type="button" class="btn-secondary" onclick="applyTripRecordSalaryExclusions(true)">套用不計薪</button>
-    <button type="button" class="btn-secondary" onclick="applyTripRecordSalaryExclusions(false)">恢復計入薪資</button>
-  </div>
-</div>
-<div class="billing-paper" id="tripDriverSalarySummary" style="margin-bottom:16px">
-  <div class="billing-empty">請選擇月份與司機查看當月總領薪資</div>
 </div>
 <div class="table-wrap"><table><thead><tr>
 <th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>本月薪資</th><th>操作</th>
@@ -1482,7 +1436,7 @@ async function loadTrips(){
     row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(gross)}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
-  if(!window._tripCache.length)list.innerHTML='<tr><td colspan="11">這個月份目前沒有趟次紀錄</td></tr>';
+  if(!window._tripCache.length)list.innerHTML="";
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
   await loadTripRecordSalaryExclusionCustomers();

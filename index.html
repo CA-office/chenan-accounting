@@ -291,7 +291,7 @@ th{background:#f5f7f8}
 </div>
 
 <div class="card" id="driverSettlementReportCard">
-<h2>司機本月結算</h2>
+<h2>薪資結算</h2>
 <div class="grid" style="margin-bottom:14px">
 <div class="form-field"><label for="tripMonth">結算月份</label><input id="tripMonth" type="month" onchange="loadTripSummary();loadTripSalaryExclusionCustomers()"></div>
 </div>
@@ -304,13 +304,21 @@ th{background:#f5f7f8}
     <button type="button" class="btn-secondary" onclick="applySalaryExclusions(false)">恢復計入薪資</button>
   </div>
 </div>
-<div class="report-actions">
-<button class="btn-green" onclick="exportDriverSettlementExcel()">下載 Excel</button>
+<div class="report-actions" style="margin-bottom:12px">
+<button class="btn-green" onclick="saveDriverSettlement()">儲存薪資結算</button>
+<button onclick="exportDriverSettlementExcel()">下載 Excel</button>
 <button onclick="exportDriverSettlementPDF()">下載 PDF</button>
+</div>
+<div class="billing-paper" id="driverSettlementPreview" style="margin-bottom:16px">
+  <div class="billing-empty">請選擇月份與司機查看薪資結算預覽</div>
 </div>
 <div class="table-wrap"><table><thead><tr>
 <th>司機</th><th>趟次</th><th>司機薪資</th><th>油資</th><th>司機實領</th>
 </tr></thead><tbody id="tripSummaryList"></tbody></table></div>
+<div class="card" style="margin-top:16px;padding:16px">
+  <div style="font-size:18px;font-weight:700;margin-bottom:10px">已儲存的薪資結算</div>
+  <div class="table-wrap"><table><thead><tr><th>月份</th><th>司機</th><th>趟次</th><th>司機薪資</th><th>油資</th><th>總領薪資</th><th>儲存日期</th></tr></thead><tbody id="driverSettlementSavedList"></tbody></table></div>
+</div>
 </div>
 
 <div class="card">
@@ -835,6 +843,7 @@ async function showApp(){
   populateBillingCustomers();
   await loadDashboard();
   await loadTripSummary();
+  await loadSavedDriverSettlements();
   await loadTrips();
   setupReportsSection();
   renderCalendarDriverFilter();
@@ -1461,12 +1470,13 @@ async function loadTrips(){
 }
 async function loadTripRecordSalarySummary(month,driverId){
   const box=document.getElementById("tripDriverSalarySummary");
+  const preview=document.getElementById("driverSettlementPreview");
   if(!box)return;
   const {start,next}=monthRange(month||currentMonth());
-  let query=client.from("driver_trips").select("employee_id,quantity,driver_fee,fuel_cost,salary_excluded,employees(name,license_plate)").gte("trip_date",start).lt("trip_date",next);
+  let query=client.from("driver_trips").select("id,trip_date,trip_time,employee_id,quantity,driver_fee,fuel_cost,salary_excluded,description,employees(name,license_plate),customers(name),customer_items(name)").gte("trip_date",start).lt("trip_date",next);
   if(driverId)query=query.eq("employee_id",driverId);
-  const {data,error}=await query;
-  if(error){console.error(error);box.innerHTML='<div class="billing-empty">無法讀取當月司機薪資</div>';return}
+  const {data,error}=await query.order("trip_date",{ascending:true}).order("trip_time",{ascending:true});
+  if(error){console.error(error);box.innerHTML='<div class="billing-empty">無法讀取當月司機薪資</div>';if(preview)preview.innerHTML='<div class="billing-empty">無法讀取薪資結算預覽</div>';return}
   const rows=data||[];
   const included=rows.filter(item=>!item.salary_excluded);
   let trips=0,pay=0,fuel=0;
@@ -1482,9 +1492,11 @@ async function loadTripRecordSalarySummary(month,driverId){
   const net=pay-fuel;
   const monthText=(month||currentMonth()).replace("-","年")+"月";
   const driverText=driverId ? (rows[0]?.employees?.name||"選擇的司機") : (names.size?Array.from(names).join("、"):"全部司機");
+  const plateText=driverId ? (rows[0]?.employees?.license_plate||"") : "";
+  window._driverSettlementPreviewData={month:month||currentMonth(),driverId:driverId||"",driverName:driverText,plate:plateText,rows,included,excludedRows,trips,pay,fuel,net,excludedPay};
   box.innerHTML=`
     <div style="padding:4px 2px">
-      <div style="font-size:14px;opacity:.7;margin-bottom:6px">${safe(monthText)}｜${safe(driverText)}</div>
+      <div style="font-size:14px;opacity:.7;margin-bottom:6px">${safe(monthText)}｜${safe(driverText)}${plateText?`｜${safe(plateText)}`:""}</div>
       <div style="font-size:18px;font-weight:700;margin-bottom:12px">薪資結算</div>
       <div class="grid" style="margin:0">
         <div><div style="opacity:.65;font-size:13px">總趟次</div><div style="font-size:20px;font-weight:700">${trips}</div></div>
@@ -1494,7 +1506,13 @@ async function loadTripRecordSalarySummary(month,driverId){
       </div>
       ${excludedRows.length?`<div style="margin-top:12px;padding:10px 12px;background:#fff7ed;border-radius:10px;font-size:13px;color:#9a3412">本月已排除 ${excludedRows.length} 筆趟次，原本司機薪資 ${money(excludedPay)} 未計入。</div>`:""}
     </div>`;
+  if(preview){
+    const detailRows=included.map(item=>`<tr><td>${safe(item.trip_date||"")}</td><td>${safe(String(item.trip_time||"").slice(0,5))}</td><td>${safe(item.customers?.name||"")}</td><td>${safe(item.customer_items?.name||"")}</td><td>${safe(item.description||"")}</td><td>${safe(item.quantity||0)}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0)-Number(item.fuel_cost||0))}</td></tr>`).join("");
+    const excludedDetail=excludedRows.map(item=>`<tr style="opacity:.65"><td>${safe(item.trip_date||"")}</td><td>${safe(String(item.trip_time||"").slice(0,5))}</td><td>${safe(item.customers?.name||"")}</td><td>${safe(item.customer_items?.name||"")}</td><td>${safe(item.description||"")}</td><td>${safe(item.quantity||0)}</td><td>${money(Number(item.driver_fee||0)*Number(item.quantity||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>不計薪</td></tr>`).join("");
+    preview.innerHTML=`<div style="padding:18px"><div style="font-size:24px;font-weight:800;text-align:center;margin-bottom:6px">司機薪資結算</div><div style="text-align:center;color:#64748b;margin-bottom:16px">${safe(monthText)}｜${safe(driverText)}${plateText?`｜${safe(plateText)}`:""}</div><div class="grid" style="margin-bottom:16px"><div><div style="opacity:.65;font-size:13px">總趟次</div><div style="font-size:22px;font-weight:800">${trips}</div></div><div><div style="opacity:.65;font-size:13px">司機薪資</div><div style="font-size:22px;font-weight:800">${money(pay)}</div></div><div><div style="opacity:.65;font-size:13px">油資</div><div style="font-size:22px;font-weight:800">${money(fuel)}</div></div><div><div style="opacity:.65;font-size:13px">總領薪資</div><div style="font-size:22px;font-weight:800">${money(net)}</div></div></div><div class="table-wrap"><table><thead><tr><th>日期</th><th>時間</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>本次實領</th></tr></thead><tbody>${detailRows||'<tr><td colspan="9">本月沒有可計薪趟次</td></tr>'}${excludedDetail?`<tr><td colspan="9" style="background:#fff7ed;color:#9a3412;font-weight:700">以下趟次為本月不計薪資料</td></tr>${excludedDetail}`:""}</tbody></table></div></div>`;
+  }
 }
+
 async function loadTripSummary(){
   const month=document.getElementById("tripMonth").value||currentMonth();
   const {start,next}=monthRange(month);
@@ -1613,36 +1631,45 @@ window.exportCustomerQuotePDF=async function(){
   await exportElementToPDF("customerQuoteReportCard",`客戶報價成本報表_${name}_${currentMonth()}.pdf`,`landscape`);
 };
 
+window.saveDriverSettlement=async function(){
+  const d=window._driverSettlementPreviewData;
+  if(!d){alert("請先選擇月份與司機，產生薪資結算預覽。");return}
+  if(!d.driverId){alert("請先在上方選擇一位司機，再儲存薪資結算。");return}
+  const payload={user_id:null,settlement_month:d.month,employee_id:d.driverId,total_trips:d.trips,gross_salary:d.pay,fuel_cost:d.fuel,net_salary:d.net,excluded_salary:d.excludedPay,snapshot:d.rows};
+  try{const {data:{user}}=await client.auth.getUser();payload.user_id=user?.id||null;}catch(e){}
+  const result=await client.from("driver_salary_settlements").upsert(payload,{onConflict:"settlement_month,employee_id"}).select().single();
+  if(result.error){alert("薪資結算儲存失敗："+result.error.message+"\n\n如果這是第一次使用，請先執行我提供的「薪資結算資料表 SQL」。");return}
+  alert("薪資結算已儲存！");
+  await loadSavedDriverSettlements();
+};
+
 window.exportDriverSettlementExcel=function(){
   if(typeof XLSX==="undefined"){alert("Excel 匯出元件尚未載入，請重新整理頁面後再試一次。");return}
-  const month=document.getElementById("tripMonth")?.value||currentMonth();
-  const {start,next}=monthRange(month);
-  const rows=(window._tripCache||[])
-    .filter(item=>item.trip_date>=start && item.trip_date<next && !item.salary_excluded)
-    .map(item=>({
-      "日期": item.trip_date||"",
-      "時間": item.trip_time||"",
-      "司機": item.employees?.name||"",
-      "車牌": employees.find(e=>String(e.id)===String(item.employee_id))?.license_plate||"",
-      "客戶": item.customers?.name||"",
-      "項目": item.customer_items?.name||"",
-      "地點": item.description||"",
-      "趟數": Number(item.quantity||0),
-      "司機薪資": Number(item.driver_fee||0)*Number(item.quantity||0),
-      "油資": Number(item.fuel_cost||0),
-      "司機實領": Number(item.driver_fee||0)*Number(item.quantity||0)-Number(item.fuel_cost||0)
-    }));
-  if(!rows.length){alert("這個月份目前沒有趟次資料。");return}
-  const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:22},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,"司機趟次");
-  XLSX.writeFile(wb,`司機趟次結算_${month}.xlsx`);
+  const d=window._driverSettlementPreviewData;
+  if(!d){alert("請先選擇月份與司機，產生薪資結算預覽。");return}
+  if(!d.driverId){alert("請先選擇一位司機，再匯出薪資結算。");return}
+  const rows=d.included.map(item=>({"日期":item.trip_date||"","時間":String(item.trip_time||"").slice(0,5),"司機":item.employees?.name||d.driverName,"車牌":item.employees?.license_plate||d.plate,"客戶":item.customers?.name||"","項目":item.customer_items?.name||"","地點":item.description||"","趟數":Number(item.quantity||0),"司機薪資":Number(item.driver_fee||0)*Number(item.quantity||0),"油資":Number(item.fuel_cost||0),"司機實領":Number(item.driver_fee||0)*Number(item.quantity||0)-Number(item.fuel_cost||0)}));
+  rows.push({"日期":"","時間":"","司機":d.driverName,"車牌":d.plate,"客戶":"","項目":"","地點":"合計","趟數":d.trips,"司機薪資":d.pay,"油資":d.fuel,"司機實領":d.net});
+  if(d.excludedRows.length)rows.push({"日期":"","時間":"","司機":d.driverName,"車牌":d.plate,"客戶":"","項目":"","地點":"不計薪（排除）","趟數":d.excludedRows.reduce((s,x)=>s+Number(x.quantity||0),0),"司機薪資":d.excludedPay,"油資":d.excludedRows.reduce((s,x)=>s+Number(x.fuel_cost||0),0),"司機實領":"不計薪"});
+  const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:22},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
+  XLSX.writeFile(wb,`司機薪資結算_${d.driverName}_${d.month}.xlsx`);
 };
 
 window.exportDriverSettlementPDF=async function(){
-  const month=document.getElementById("tripMonth")?.value||currentMonth();
-  await exportElementToPDF("driverSettlementReportCard",`司機本月結算_${month}.pdf`,`landscape`);
+  const d=window._driverSettlementPreviewData;
+  if(!d){alert("請先選擇月份與司機，產生薪資結算預覽。");return}
+  if(!d.driverId){alert("請先選擇一位司機，再匯出薪資結算 PDF。");return}
+  await exportElementToPDF("driverSettlementPreview",`司機薪資結算_${d.driverName}_${d.month}.pdf`,`landscape`);
+};
+
+window.loadSavedDriverSettlements=async function(){
+  const list=document.getElementById("driverSettlementSavedList");if(!list)return;
+  const {data,error}=await client.from("driver_salary_settlements").select("*,employees(name,license_plate)").order("settlement_month",{ascending:false}).order("updated_at",{ascending:false});
+  if(error){list.innerHTML='<tr><td colspan="7" style="color:#9a3412">尚未建立薪資結算儲存資料表，執行 SQL 後即可使用。</td></tr>';return}
+  list.innerHTML="";
+  (data||[]).forEach(item=>{const row=document.createElement("tr");row.innerHTML=`<td>${safe(item.settlement_month)}</td><td>${safe(item.employees?.name||"")}</td><td>${safe(item.total_trips||0)}</td><td>${money(item.gross_salary)}</td><td>${money(item.fuel_cost)}</td><td>${money(item.net_salary)}</td><td>${safe(String(item.updated_at||"").slice(0,10))}</td>`;list.appendChild(row)});
+  if(!(data||[]).length)list.innerHTML='<tr><td colspan="7">目前尚無已儲存的薪資結算</td></tr>';
 };
 
 function setupReportsSection(){

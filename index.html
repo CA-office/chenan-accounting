@@ -1236,7 +1236,7 @@ window.saveTrip=async function(){
   const trip_date=normalizeDate(document.getElementById("tripDate").value);
   let trip_time=document.getElementById("tripTime").value.trim()||null;
   if(trip_time){
-    const m=trip_time.match(/^(\\d{1,2}):(\\d{2})$/);
+    const m=trip_time.match(/^(\d{1,2}):(\d{2})$/);
     if(!m){
       alert("時間請輸入 24 小時制，例如 08:00 或 18:30");
       return;

@@ -1489,7 +1489,7 @@ function eventButton(t){
 }
 function addDayCell(grid,date,opts={}){
   const cell=document.createElement('div'); cell.className='calendar-day'+(opts.cellClass?' '+opts.cellClass:'')+(date===today()?' today':'');
-  const title=document.createElement('div'); title.className='calendar-date'; title.textContent=`${date.slice(5).replace('-','/')}（${dayName(new Date(date+'T00:00:00'))}）`; cell.appendChild(title);
+  const title=document.createElement('div'); title.className='calendar-date'; title.textContent=String(parseInt(date.slice(8,10),10)); cell.appendChild(title);
   const driverId=document.getElementById('calendarDriver')?.value||''; const trips=calendarTripsForDate(date,driverId);
   if(!trips.length){const e=document.createElement('div');e.className='calendar-empty';e.textContent='無趟次';cell.appendChild(e)}
   trips.forEach(t=>cell.appendChild(eventButton(t)));
@@ -1503,7 +1503,7 @@ function renderCalendar(){
   let allTrips=[];
   if(calendarView==='month'){
     const y=base.getFullYear(),m=base.getMonth(); document.getElementById('calendarMonth').value=`${y}-${String(m+1).padStart(2,'0')}`;
-    names.forEach(n=>{const d=document.createElement('div');d.className='calendar-weekday';d.textContent='週'+n;grid.appendChild(d)});
+    names.forEach(n=>{const d=document.createElement('div');d.className='calendar-weekday';d.textContent=n;grid.appendChild(d)});
     grid.classList.remove('week-view','day-view');
     const first=new Date(y,m,1),start=first.getDay(),days=new Date(y,m+1,0).getDate();
     for(let i=0;i<start;i++){const d=document.createElement('div');d.className='calendar-day muted';grid.appendChild(d)}
@@ -1512,12 +1512,12 @@ function renderCalendar(){
   }else if(calendarView==='week'){
     grid.classList.add('week-view');grid.classList.remove('day-view');
     const sun=new Date(base);sun.setDate(base.getDate()-base.getDay());
-    names.forEach((n,i)=>{const d=new Date(sun);d.setDate(sun.getDate()+i);const iso=localISO(d);const h=document.createElement('div');h.className='calendar-weekday';h.textContent=`${n} ${d.getMonth()+1}/${d.getDate()}`;grid.appendChild(h);allTrips.push(...calendarTripsForDate(iso,driverId))});
+    names.forEach((n,i)=>{const d=new Date(sun);d.setDate(sun.getDate()+i);const iso=localISO(d);const h=document.createElement('div');h.className='calendar-weekday';h.textContent=n;grid.appendChild(h);allTrips.push(...calendarTripsForDate(iso,driverId))});
     for(let i=0;i<7;i++){const d=new Date(sun);d.setDate(sun.getDate()+i);addDayCell(grid,localISO(d),{cellClass:'week-cell'})}
     document.getElementById('calendarTitle').textContent=`${localISO(sun)} ～ ${localISO(new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+6))}｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||''):'全部司機'}`;
   }else{
     grid.classList.remove('week-view');grid.classList.add('day-view');
-    const h=document.createElement('div');h.className='calendar-weekday';h.textContent=`${dateStr}（週${dayName(base)}）`;grid.appendChild(h);allTrips=calendarTripsForDate(dateStr,driverId);addDayCell(grid,dateStr,{cellClass:'day-cell'});
+    const h=document.createElement('div');h.className='calendar-weekday';h.textContent=dayName(base);grid.appendChild(h);allTrips=calendarTripsForDate(dateStr,driverId);addDayCell(grid,dateStr,{cellClass:'day-cell'});
     document.getElementById('calendarTitle').textContent=`${dateStr}｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||''):'全部司機'}`;
   }
   const summary=document.getElementById('calendarSummary');

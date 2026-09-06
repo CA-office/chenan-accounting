@@ -245,7 +245,7 @@ th{background:#f5f7f8}
 <div class="grid trip-form-grid">
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="date"></div>
-<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="time"></div>
+<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" placeholder="例如：08:00" autocomplete="off"></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
 <div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
@@ -855,6 +855,14 @@ window.previewTripPrice=function(){
 };
 document.getElementById("tripQuantity").addEventListener("input",previewTripPrice);
 
+// 時間改為 24 小時制，可直接輸入，例如 08:00、13:30
+document.getElementById("tripTime").addEventListener("input",function(){
+  let v=this.value.replace(/\D/g,"").slice(0,4);
+  if(v.length>2) v=v.slice(0,2)+":"+v.slice(2);
+  this.value=v;
+});
+
+
 window.saveTrip=async function(){
   const employee_id=document.getElementById("tripDriver").value;
   const trip_date=document.getElementById("tripDate").value;
@@ -868,6 +876,7 @@ window.saveTrip=async function(){
   const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
   if(!employee_id){alert("請選擇司機");return}
   if(!trip_date){alert("請選擇日期");return}
+  if(trip_time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(trip_time)){alert("時間請輸入 24 小時制，例如 08:00 或 13:30");return}
   if(!customer_id){alert("請選擇客戶");return}
   if(!customer_item_id||!item){alert("請選擇客戶項目");return}
   if(quantity<=0){alert("趟數必須大於 0");return}

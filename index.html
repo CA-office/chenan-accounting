@@ -143,6 +143,10 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" placeholder="請輸入 Email" autocomplete="username"></div>
 <div class="form-field"><label for="loginPassword">密碼</label><input id="loginPassword" type="password" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()"></div>
 <button onclick="login()">登入系統</button>
+<button class="btn-secondary" onclick="loginWithPasskey()">使用 Face ID／裝置解鎖登入</button>
+<div style="text-align:center;color:#78909c;font-size:12px;margin-top:10px">
+第一次仍請用 Email＋密碼登入，登入後即可設定 Face ID。
+</div>
 <div id="loginMessage" class="message"></div>
 </div>
 </div>
@@ -165,6 +169,7 @@ th{background:#f5f7f8}
 <div class="user-bar">
 <span id="currentUserEmail" class="user-email"></span>
 <span id="currentUserRole" class="user-role">登入中</span>
+<button class="btn-secondary logout-top" onclick="registerFaceID()">設定 Face ID</button>
 <button class="btn-secondary logout-top" onclick="logout()">登出</button>
 </div>
 <section id="home" class="section active">
@@ -415,7 +420,14 @@ th{background:#f5f7f8}
 <script>
 const SUPABASE_URL = "https://pvrvrkptocddkcsbbzsg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_42K1-kkn1y_80WylTSz5dA_c0f_ilYY";
-const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    experimental: { passkey: true }
+  }
+});
 
 let employees = [];
 let customers = [];
@@ -566,6 +578,72 @@ function renderCurrentUserBar(){
   if(homeName)homeName.textContent=currentUserDisplayName||"使用者";
   if(homeRole)homeRole.textContent=currentUserRole==="admin"?"管理者":"使用者";
 }
+
+
+function canUsePasskey(){
+  return !!(window.PublicKeyCredential && navigator.credentials);
+}
+
+window.loginWithPasskey=async function(){
+  const msg=document.getElementById("loginMessage");
+
+  if(!canUsePasskey()){
+    msg.textContent="此裝置或瀏覽器目前不支援 Face ID／Passkey，請改用 Email＋密碼登入。";
+    msg.className="message error";
+    return;
+  }
+
+  msg.textContent="請使用 Face ID／裝置解鎖…";
+  msg.className="message";
+
+  try{
+    const {data,error}=await client.auth.signInWithPasskey();
+    if(error){
+      msg.textContent="Face ID 登入失敗："+error.message;
+      msg.className="message error";
+      return;
+    }
+
+    const result=await loadCurrentUserProfile();
+    if(!result.ok){
+      msg.textContent=result.message;
+      msg.className="message error";
+      return;
+    }
+
+    msg.textContent="";
+    await showApp();
+  }catch(err){
+    msg.textContent="Face ID 登入未完成："+(err?.message||"請再試一次");
+    msg.className="message error";
+  }
+};
+
+window.registerFaceID=async function(){
+  const msg=document.getElementById("loginMessage");
+
+  if(!currentUser){
+    alert("請先登入系統，再設定 Face ID。");
+    return;
+  }
+
+  if(!canUsePasskey()){
+    alert("此裝置或瀏覽器目前不支援 Passkey／Face ID。");
+    return;
+  }
+
+  try{
+    const {data,error}=await client.auth.registerPasskey();
+    if(error){
+      alert("Face ID 設定失敗："+error.message);
+      return;
+    }
+
+    alert("Face ID 已設定完成！\n下次可以直接按「使用 Face ID／裝置解鎖登入」。");
+  }catch(err){
+    alert("Face ID 設定未完成："+(err?.message||"請再試一次"));
+  }
+};
 
 window.login=async function(){
   const email=document.getElementById("loginEmail").value.trim();

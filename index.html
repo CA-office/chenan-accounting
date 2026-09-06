@@ -367,6 +367,13 @@ th{background:#f5f7f8}
 </tr></thead><tbody id="customerItemList"></tbody></table></div>
 </div>
 
+<div class="card">
+<h2>客戶資料</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th><th>操作</th>
+</tr></thead><tbody id="customerList"></tbody></table></div>
+</div>
+
 <div class="card" id="customerQuoteReportCard">
 <h2>客戶項目成本報表</h2>
 <div class="form-field"><label for="reportCustomer">客戶</label><select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select></div>
@@ -819,7 +826,7 @@ async function showApp(){
   const tripRecordMonth=document.getElementById("tripRecordMonth"); if(tripRecordMonth)tripRecordMonth.value=currentMonth();
   document.getElementById("billDate").value=today();
   document.getElementById("billMonth").value=currentMonth();
-  await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
+  await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadCustomerItems(),loadQuotations()]);
   populateBillingCustomers();
   await loadDashboard();
   await loadTripSummary();

@@ -1728,10 +1728,10 @@ window.deleteSavedDriverSalarySettlement=async function(id){
 function setupReportsSection(){
   const container=document.getElementById("reportsContainer");
   if(!container)return;
+  // 客戶項目成本報表放在「報表」；司機薪資結算必須留在「趟次結算」內，
+  // 這樣「薪資結算」與「趟次紀錄」會在同一個頁面、上下清楚排列。
   const customerCard=document.getElementById("customerQuoteReportCard");
-  const driverCard=document.getElementById("driverSettlementReportCard");
   if(customerCard && customerCard.parentElement!==container)container.appendChild(customerCard);
-  if(driverCard && driverCard.parentElement!==container)container.appendChild(driverCard);
 }
 function renderTripSettlementDriverFilter(){
   const sel=document.getElementById("tripSettlementDriver"); if(!sel)return;

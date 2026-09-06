@@ -443,7 +443,16 @@ function monthRange(month){
 
 let calendarView='month';
 const driverColors=['#dbeafe','#fef3c7','#dcfce7','#f3e8ff','#fee2e2','#ffedd5','#cffafe','#fce7f3','#e0e7ff','#ecfccb','#f5d0fe','#ccfbf1'];
+const fixedDriverColors={
+  '晨遠':'#fef3c7',
+  'Bruce李':'#ede9fe',
+  '泓霖':'#c4b5fd',
+  '謝瑞擇':'#dcfce7'
+};
 function driverColor(employeeId){
+  const employee=employees.find(e=>String(e.id)===String(employeeId));
+  const name=employee?.name||'';
+  if(fixedDriverColors[name]) return fixedDriverColors[name];
   const idx=employees.findIndex(e=>String(e.id)===String(employeeId));
   return driverColors[(idx<0?0:idx)%driverColors.length];
 }

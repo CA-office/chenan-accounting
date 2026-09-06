@@ -376,7 +376,7 @@ th{background:#f5f7f8}
 <section id="quotations" class="section">
 <div class="card">
 <h2>新增請款單</h2>
-<p class="form-hint">選擇客戶與請款月份後，系統會自動抓取該客戶當月已登錄的司機趟次，整理成請款明細。</p>
+<p class="form-hint">選擇客戶後，系統會依請款月份自動抓取該客戶的司機趟次，並直接帶入「客戶項目」內設定的司機費作為請款金額，不需要在請款單重複輸入。</p>
 <div class="grid">
 <div class="form-field"><label for="billCustomer">客戶</label><select id="billCustomer" onchange="loadBillingPreview()">
 <option value="">請選擇客戶</option>
@@ -1578,28 +1578,44 @@ function populateBillingCustomers(){
 async function loadBillingPreview(){
   populateBillingCustomers();
   const customerId=document.getElementById("billCustomer")?.value;
-  const month=document.getElementById("billMonth")?.value;
+  const month=document.getElementById("billMonth")?.value || currentMonth();
   const preview=document.getElementById("billingPreview");
-  if(!customerId || !month){
-    preview.innerHTML='<div class="billing-empty">請先選擇客戶與請款月份</div>';
+  if(!customerId){
+    preview.innerHTML='<div class="billing-empty">請先選擇客戶</div>';
     billingRows=[]; billingPreviewData=null; return;
   }
+  if(!document.getElementById("billMonth").value){
+    document.getElementById("billMonth").value=month;
+  }
   const {start,next}=monthRange(month);
+
+  // 請款單金額直接沿用「客戶項目」設定的司機費。
+  // 司機費就是對客戶請款的金額，不再使用客戶收費欄位。
   const {data,error}=await client.from("driver_trips")
-    .select('*, employees(name), customers(name), customer_items(name)')
+    .select('*, employees(name), customers(name), customer_items(name,customer_price,driver_fee)')
     .eq("customer_id",customerId)
     .gte("trip_date",start).lt("trip_date",next)
     .order("trip_date",{ascending:true}).order("trip_time",{ascending:true});
   if(error){console.error(error);alert("載入請款明細失敗："+error.message);return}
-  billingRows=(data||[]).map(t=>({
-    date:t.trip_date||"",
-    qty:Number(t.quantity||0),
-    area:t.description||t.customer_items?.name||"",
-    amount:Number(t.customer_price||0)*Number(t.quantity||0),
-    note:t.note||"",
-    time:t.trip_time||"",
-    driver:t.employees?.name||""
-  }));
+
+  billingRows=(data||[]).map(t=>{
+    const item=t.customer_items || {};
+    const driverFee = item.driver_fee != null
+      ? Number(item.driver_fee||0)
+      : Number(t.driver_fee||0);
+    const qty=Number(t.quantity||0);
+    return {
+      date:t.trip_date||"",
+      qty,
+      area:t.description||item.name||"",
+      amount:driverFee*qty,
+      driverFee,
+      driverAmount:driverFee*qty,
+      note:t.note||"",
+      time:t.trip_time||"",
+      driver:t.employees?.name||""
+    };
+  });
   renderBillingPreview();
 }
 function renderBillingPreview(){
@@ -1612,7 +1628,8 @@ function renderBillingPreview(){
   const subtotal=billingRows.reduce((s,r)=>s+r.amount,0);
   const tax=Math.round(subtotal*rate/100);
   const total=subtotal+tax;
-  billingPreviewData={customer:c,month,date,rate,payment,note,subtotal,tax,total,rows:billingRows};
+  const internalDriverTotal=billingRows.reduce((s,r)=>s+Number(r.driverAmount||0),0);
+  billingPreviewData={customer:c,month,date,rate,payment,note,subtotal,tax,total,internalDriverTotal,rows:billingRows};
   const rows=billingRows.length?billingRows.map((r,i)=>`
     <tr>
       <td>${i+1}</td>
@@ -1725,7 +1742,7 @@ window.downloadBillingPDF=async function(){
   await exportElementToPDF("billingPreview",`請款單_${name}_${month}.pdf`,"portrait");
 };
 window.downloadBillingExcel=function(){
-  if(!billingPreviewData){alert("請先選擇客戶與月份");return}
+  if(!billingPreviewData){alert("請先選擇客戶");return}
   const d=billingPreviewData;
   const rows=d.rows.map((r,i)=>({
     "項次":i+1,"日期":formatBillDate(r.date),"趟數／台數":r.qty,"運送地區／項目":r.area,

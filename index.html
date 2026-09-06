@@ -238,7 +238,7 @@ th{background:#f5f7f8}
 </section>
 
 
-<!-- 司機日曆 -->
+<!-- 行事曆 -->
 <section id="calendar" class="section">
 <div class="card">
 <h2>行事曆</h2>
@@ -288,6 +288,40 @@ th{background:#f5f7f8}
 <textarea id="tripNote" placeholder="備註"></textarea>
 <button id="tripSaveBtn" onclick="saveTrip()">儲存趟次</button>
 <button id="tripCancelBtn" class="btn-secondary" style="display:none" onclick="cancelTripEdit()">取消修改</button>
+</div>
+
+<div class="card" id="driverSettlementReportCard">
+<h2>薪資結算</h2>
+<div class="grid" style="margin-bottom:14px">
+<div class="form-field"><label for="tripMonth">結算月份</label><input id="tripMonth" type="month" onchange="loadTripSalaryPreview();loadTripSalaryExclusionCustomers()"></div>
+<div class="form-field"><label for="tripSettlementDriver">選擇司機</label><select id="tripSettlementDriver" onchange="loadTripSalaryPreview();loadSalaryExclusionCustomersForMonth(document.getElementById('tripMonth')?.value||currentMonth())"><option value="">請選擇司機</option></select></div>
+</div>
+<div class="report-actions" style="margin:14px 0 16px">
+<button class="btn-green" type="button" onclick="saveDriverSalarySettlement()">儲存薪資結算</button>
+<button class="btn-secondary" type="button" onclick="exportDriverSettlementPDF()">下載薪資結算 PDF</button>
+<button class="btn-secondary" type="button" onclick="exportDriverSettlementExcel()">下載薪資結算 Excel</button>
+</div>
+<div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
+  <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
+  <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
+  <div id="salaryExclusionCustomers" class="checkbox-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn-secondary" onclick="applySalaryExclusions(true)">套用不計薪</button>
+    <button type="button" class="btn-secondary" onclick="applySalaryExclusions(false)">恢復計入薪資</button>
+  </div>
+</div>
+
+<div class="card" style="margin:14px 0 0;padding:0;border:0;box-shadow:none;background:transparent">
+<h2 style="margin-top:0">薪資結算預覽</h2>
+<div id="driverSalarySettlementPreview" class="billing-paper">
+  <div class="billing-empty">請先選擇月份與司機</div>
+</div>
+</div>
+
+<div style="margin-top:16px">
+<h3 style="margin:0 0 10px">已儲存的薪資結算</h3>
+<div class="table-wrap"><table><thead><tr><th>月份</th><th>司機</th><th>趟次</th><th>司機薪資</th><th>油資</th><th>總領薪資</th><th>儲存日期</th><th>操作</th></tr></thead><tbody id="driverSalarySettlementList"></tbody></table></div>
+</div>
 </div>
 
 <div class="card">
@@ -1236,7 +1270,7 @@ window.saveTrip=async function(){
   const trip_date=normalizeDate(document.getElementById("tripDate").value);
   let trip_time=document.getElementById("tripTime").value.trim()||null;
   if(trip_time){
-    const m=trip_time.match(/^(\d{1,2}):(\d{2})$/);
+    const m=trip_time.match(/^(\\d{1,2}):(\\d{2})$/);
     if(!m){
       alert("時間請輸入 24 小時制，例如 08:00 或 18:30");
       return;
@@ -1436,7 +1470,7 @@ async function loadTrips(){
     row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${safe(item.quantity)}</td><td>${money(gross)}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
-  if(!window._tripCache.length)list.innerHTML="";
+  if(!window._tripCache.length)list.innerHTML='<tr><td colspan="11">這個月份目前沒有趟次紀錄</td></tr>';
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
   await loadTripRecordSalaryExclusionCustomers();
@@ -1640,7 +1674,7 @@ async function loadTripSalaryPreview(){
 function renderDriverSalaryPreview(){
   const d=window.driverSalaryPreviewData; const el=document.getElementById("driverSalarySettlementPreview"); if(!d||!el)return;
   const detailRows=d.rows.length?d.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${safe(formatBillDate(r.date))}</td><td>${safe(r.time)}</td><td>${safe(r.customer)}</td><td>${safe(r.item)}</td><td>${safe(r.location)}</td><td>${r.qty}</td><td class="money">${money(r.salary)}</td><td class="money">${money(r.fuel)}</td><td>${r.excluded?'<span style="color:#b91c1c;font-weight:700">不計薪</span>':'計入'}</td></tr>`).join(""):`<tr><td colspan="10">本月份尚無趟次資料</td></tr>`;
-  el.innerHTML=`<div class="billing-head"><h1>晨 安 企 業</h1><h2>司 機 薪 資 結 算</h2></div><div class="billing-meta"><div>司機：${safe(d.driverName)}</div><div>結算月份：${safe(monthLabel(d.month))}</div><div>車牌：${safe(d.plate)}</div><div>日期：${safe(today())}</div></div><table><thead><tr><th>項次</th><th>日期</th><th>時間</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>狀態</th></tr></thead><tbody>${detailRows}<tr class="billing-total"><td colspan="6">計入薪資合計</td><td>${d.totalTrips}</td><td class="money">${money(d.grossSalary)}</td><td class="money">${money(d.fuelCost)}</td><td>計入</td></tr><tr class="billing-total"><td colspan="7">總領薪資</td><td colspan="2" class="money">${money(d.netSalary)}</td><td></td></tr>${d.excludedCount?`<tr class="billing-total"><td colspan="7">不計薪趟次（保留紀錄）</td><td colspan="2" class="money">${money(d.excludedSalary)}</td><td>${d.excludedCount} 筆</td></tr>`:""}</tbody></table><div class="billing-footer"><strong>計算方式：</strong>司機薪資 − 油資 ＝ 總領薪資</div>`;
+  el.innerHTML=`<div class="billing-head"><h1>晨 安 企 業</h1></div><div class="billing-meta"><div>司機：${safe(d.driverName)}</div><div>月份：${safe(monthLabel(d.month))}</div><div>車牌：${safe(d.plate)}</div><div>日期：${safe(today())}</div></div><table><thead><tr><th>項次</th><th>日期</th><th>時間</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>狀態</th></tr></thead><tbody>${detailRows}<tr class="billing-total"><td colspan="6">合計</td><td>${d.totalTrips}</td><td class="money">${money(d.grossSalary)}</td><td class="money">${money(d.fuelCost)}</td><td>計入</td></tr><tr class="billing-total"><td colspan="7">總領薪資</td><td colspan="2" class="money">${money(d.netSalary)}</td><td></td></tr>${d.excludedCount?`<tr class="billing-total"><td colspan="7">不計薪趟次（保留紀錄）</td><td colspan="2" class="money">${money(d.excludedSalary)}</td><td>${d.excludedCount} 筆</td></tr>`:""}</tbody></table><div class="billing-footer"><strong>計算方式：</strong>司機薪資 − 油資 ＝ 總領薪資</div>`;
 }
 
 window.saveDriverSalarySettlement=async function(){
@@ -1682,8 +1716,8 @@ window.deleteSavedDriverSalarySettlement=async function(id){
 function setupReportsSection(){
   const container=document.getElementById("reportsContainer");
   if(!container)return;
-  // 客戶項目成本報表放在「報表」；司機薪資結算必須留在「趟次結算」內，
-  // 這樣「薪資結算」與「趟次紀錄」會在同一個頁面、上下清楚排列。
+  // 客戶項目成本報表放在「報表」；薪資結算必須留在「趟次結算」頁面。
+  // 這樣新增趟次的司機／客戶資料、薪資結算按鈕與原本橫向趟次列表都會保留。
   const customerCard=document.getElementById("customerQuoteReportCard");
   if(customerCard && customerCard.parentElement!==container)container.appendChild(customerCard);
 }

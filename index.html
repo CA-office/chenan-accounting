@@ -180,9 +180,9 @@ th{background:#f5f7f8}
 </div>
 <div class="summary">
 <div class="summary-box">本月總趟次<strong id="dashTrips">0</strong><small>趟</small></div>
-<div class="summary-box">本月客戶收入<strong id="dashIncome">$0</strong></div>
 <div class="summary-box">本月司機薪資<strong id="dashDriverPay">$0</strong></div>
-<div class="summary-box">本月公司毛利<strong id="dashGrossProfit">$0</strong></div>
+<div class="summary-box">本月油資<strong id="dashFuel">$0</strong></div>
+<div class="summary-box">本月總領薪資<strong id="dashNetPay">$0</strong></div>
 </div>
 </section>
 
@@ -276,14 +276,17 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
 <div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
-<div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
-<div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
+<div class="form-field"><label for="tripItem">項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
+<div class="form-field"><label for="tripDriverFeeInput">司機費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟司機費"></div>
 <div class="form-field"><label for="tripDescription">地點</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
-<div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請輸入油資"></div>
+</div>
+<div class="grid" style="margin-top:14px">
+<div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟油資" oninput="previewTripPrice()"></div>
+<div></div>
 </div>
 <div class="price-preview">
-<div class="total-line"><span>司機單價</span><span id="tripDriverFee">$0</span></div>
-<div class="total-line"><span>司機薪資</span><span id="tripDriverTotal">$0</span></div>
+<div class="total-line"><span>司機費</span><span id="tripDriverTotal">$0</span></div>
+<div class="total-line"><span>油資</span><span id="tripFuelTotal">$0</span></div>
 </div>
 <textarea id="tripNote" placeholder="備註"></textarea>
 <button id="tripSaveBtn" onclick="saveTrip()">儲存趟次</button>
@@ -345,52 +348,38 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="cTaxId">統一編號</label><input id="cTaxId" placeholder="請輸入統一編號"></div>
 <div class="form-field"><label for="cContact">聯絡人</label><input id="cContact" placeholder="請輸入聯絡人"></div>
 <div class="form-field"><label for="cPhone">電話</label><input id="cPhone" placeholder="請輸入電話"></div>
+</div>
 <div class="form-field"><label for="cAddress">地址</label><input id="cAddress" placeholder="請輸入地址"></div>
+<div class="grid" style="margin-top:10px">
+<div class="form-field"><label for="combinedCustomer">客戶</label><select id="combinedCustomer" onchange="loadCombinedCustomer()"><option value="">新增客戶（請填寫上方公司抬頭）</option></select></div>
+<div class="form-field"><label for="combinedItemName">項目</label><input id="combinedItemName" placeholder="例如：拍貼機、撼動、盆栽、五金"></div>
 </div>
 <div class="form-field"><label for="cNote">備註</label><textarea id="cNote" placeholder="請輸入備註"></textarea></div>
-<button id="customerSaveBtn" onclick="addCustomer()">儲存客戶</button><button id="customerCancelBtn" class="btn-secondary" style="display:none" onclick="cancelCustomerEdit()">取消修改</button>
-</div>
-
-<div class="card">
-<h2>新增客戶項目</h2>
-<div class="form-field"><label for="itemCustomer">客戶</label><select id="itemCustomer"><option value="">請選擇客戶</option></select></div>
-<div class="grid">
-<div class="form-field"><label for="itemName">項目名稱</label><input id="itemName" placeholder="例如：拍貼機、撼動、五金"></div>
-<div class="form-field"><label for="itemDriverFee">司機費</label><input id="itemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div><div style="grid-column:1/-1;font-size:13px;opacity:.7;margin-top:-6px">客戶項目只需設定「項目名稱」與「司機費」，請款單會直接使用司機費。</div>
-<div class="form-field"><label for="itemNote">備註</label><input id="itemNote" placeholder="請輸入備註"></div>
-</div>
-<button id="customerItemSaveBtn" onclick="addCustomerItem()">儲存客戶項目</button><button id="customerItemCancelBtn" class="btn-secondary" style="display:none" onclick="cancelCustomerItemEdit()">取消修改</button>
+<div style="font-size:13px;opacity:.7;margin:-4px 0 12px">客戶與項目可一次新增；項目金額不固定，司機費請在「新增司機趟次」時自行輸入。</div>
+<button id="customerSaveBtn" onclick="saveCustomerAndItem()">儲存客戶／項目</button>
+<button id="customerCancelBtn" class="btn-secondary" style="display:none" onclick="cancelCustomerEdit()">取消修改</button>
 </div>
 
 <div class="card">
 <h2>客戶與項目</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>客戶</th><th>項目</th><th>司機費</th><th>狀態</th><th>操作</th>
+<th>客戶</th><th>項目</th><th>狀態</th><th>操作</th>
 </tr></thead><tbody id="customerItemList"></tbody></table></div>
 </div>
 
 <div class="card" id="customerQuoteReportCard">
 <h2>客戶項目成本報表</h2>
 <div class="form-field"><label for="reportCustomer">客戶</label><select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select></div>
-<div class="report-actions">
-<button class="btn-green" onclick="exportCustomerQuoteExcel()">下載 Excel</button>
-<button onclick="exportCustomerQuotePDF()">下載 PDF</button>
-</div>
 <div class="table-wrap"><table><thead><tr>
-<th>客戶</th><th>項目</th><th>司機費</th>
+<th>客戶</th><th>項目</th><th>司機費</th><th>備註</th>
 </tr></thead><tbody id="customerQuoteReportList"></tbody></table></div>
+<div class="report-actions">
+<button type="button" onclick="exportCustomerQuoteExcel()">下載 Excel</button>
+<button type="button" class="btn-secondary" onclick="exportCustomerQuotePDF()">下載 PDF</button>
 </div>
-
-<div class="card">
-<h2>客戶資料</h2>
-<div class="table-wrap"><table><thead><tr>
-<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th><th>操作</th>
-</tr></thead><tbody id="customerList"></tbody></table></div>
 </div>
 </section>
 
-
-<!-- 報表 -->
 <section id="reports" class="section">
 <div id="reportsContainer"></div>
 </section>
@@ -446,7 +435,7 @@ th{background:#f5f7f8}
 <button id="passwordChangeBtn" class="btn-green" onclick="changeFirstPassword()">儲存新密碼</button>
 </div></div>
 
-<div id="quickItemModal" class="modal-backdrop" onclick="closeQuickItemModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶項目</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的項目下拉選單。</p><div class="form-field"><label for="quickItemName">項目名稱</label><input id="quickItemName" placeholder="例如：拍貼機、撼動、五金"></div><div class="form-field"><label for="quickItemDriverFee">司機費</label><input id="quickItemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div><div style="font-size:13px;opacity:.7;margin-top:-4px">請款金額會直接使用司機費。</div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickItemModal()">取消</button><button onclick="saveQuickTripItem()">新增項目</button></div></div></div>
+<div id="quickItemModal" class="modal-backdrop" onclick="closeQuickItemModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶項目</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的項目下拉選單，司機費請在本趟趟次中自行輸入。</p><div class="form-field"><label for="quickItemName">項目名稱</label><input id="quickItemName" placeholder="例如：拍貼機、撼動、五金"></div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickItemModal()">取消</button><button onclick="saveQuickTripItem()">新增項目</button></div></div></div>
 
 <div id="calendarDetailModal" class="modal-backdrop" onclick="closeCalendarDetail(event)"><div class="modal" onclick="event.stopPropagation()"><h2>趟次詳細資料</h2><div id="calendarDetailBody"></div><button class="btn-secondary" onclick="closeCalendarDetail()">關閉</button></div></div>
 
@@ -519,7 +508,7 @@ const driverColors=['#dbeafe','#fef3c7','#dcfce7','#f3e8ff','#fee2e2','#ffedd5',
 const fixedDriverColors={
   '晨遠':'#f59e0b',
   'Bruce李':'#c4b5fd',
-  '泓霖':'#6d28d9',
+  '泓霖':'#9f6eaf',
   '謝瑞擇':'#5eead4',
   '李岳璁':'#f9a8d4'
 };
@@ -992,30 +981,82 @@ async function loadEmployees(){
 }
   renderTripSettlementDriverFilter();
 
-async function addCustomer(){
+async function saveCustomerAndItem(){
+  const selectedCustomerId=document.getElementById("combinedCustomer").value;
   const name=document.getElementById("cName").value.trim();
   const tax_id=document.getElementById("cTaxId").value.trim();
   const contact_name=document.getElementById("cContact").value.trim();
   const phone=document.getElementById("cPhone").value.trim();
   const address=document.getElementById("cAddress").value.trim();
   const note=document.getElementById("cNote").value.trim();
-  if(!name){alert("請輸入客戶名稱");return}
-  const payload={name,tax_id,contact_name,phone,address,note};
-  const result=editingCustomerId
-    ? await client.from("customers").update(payload).eq("id",editingCustomerId)
-    : await client.from("customers").insert(payload);
-  if(result.error){alert((editingCustomerId?"客戶修改失敗：":"客戶儲存失敗：")+result.error.message);return}
-  alert(editingCustomerId?"客戶資料修改成功":"客戶儲存成功");
+  const itemName=document.getElementById("combinedItemName").value.trim();
+
+  if(!name && !selectedCustomerId){alert("請輸入公司抬頭");return}
+
+  if(editingCustomerItemId){
+    if(!selectedCustomerId){alert("請選擇客戶");return}
+    if(!itemName){alert("請輸入項目名稱");return}
+    const {error}=await client.from("customer_items").update({customer_id:selectedCustomerId,name:itemName}).eq("id",editingCustomerItemId);
+    if(error){alert("客戶項目修改失敗："+error.message);return}
+    alert("客戶項目修改成功");
+    cancelCustomerEdit();
+    await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
+    return;
+  }
+
+  let customerId=selectedCustomerId;
+  const customerPayload={name,tax_id,contact_name,phone,address,note};
+  let result;
+  if(editingCustomerId){
+    result=await client.from("customers").update(customerPayload).eq("id",editingCustomerId);
+    customerId=editingCustomerId;
+  }else if(customerId){
+    result=await client.from("customers").update(customerPayload).eq("id",customerId);
+  }else{
+    result=await client.from("customers").insert(customerPayload).select("*").single();
+    if(result.data)customerId=result.data.id;
+  }
+  if(result?.error){alert((editingCustomerId?"客戶修改失敗：":"客戶儲存失敗：")+result.error.message);return}
+
+  if(itemName){
+    const duplicate=customerItems.find(i=>i.active && String(i.customer_id)===String(customerId) && String(i.name).trim()===itemName);
+    if(duplicate){alert("這個客戶已經有相同的項目名稱。");return}
+    const {error:itemError}=await client.from("customer_items").insert({
+      customer_id:customerId,name:itemName,customer_price:0,driver_fee:0,note:"",active:true
+    });
+    if(itemError){alert("客戶已儲存，但項目新增失敗："+itemError.message);return}
+  }
+
+  alert(itemName ? "客戶與項目儲存成功" : (editingCustomerId?"客戶資料修改成功":"客戶儲存成功"));
   cancelCustomerEdit();
-  await loadCustomers();
+  await loadCustomers(); await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
 }
+
+window.loadCombinedCustomer=function(){
+  const id=document.getElementById("combinedCustomer").value;
+  if(!id){
+    if(!editingCustomerId) ["cName","cTaxId","cContact","cPhone","cAddress","cNote"].forEach(x=>document.getElementById(x).value="");
+    return;
+  }
+  const customer=customers.find(c=>String(c.id)===String(id));
+  if(!customer)return;
+  document.getElementById("cName").value=customer.name||"";
+  document.getElementById("cTaxId").value=customer.tax_id||"";
+  document.getElementById("cContact").value=customer.contact_name||"";
+  document.getElementById("cPhone").value=customer.phone||"";
+  document.getElementById("cAddress").value=customer.address||"";
+  document.getElementById("cNote").value=customer.note||"";
+};
+
 window.editCustomer=function(id){
   const customer=customers.find(c=>String(c.id)===String(id));
   if(!customer)return;
-  editingCustomerId=id;
+  editingCustomerId=id; editingCustomerItemId=null;
   document.getElementById("customerFormTitle").textContent="修改客戶資料";
-  document.getElementById("customerSaveBtn").textContent="儲存修改";
+  document.getElementById("customerSaveBtn").textContent="儲存客戶";
   document.getElementById("customerCancelBtn").style.display="inline-block";
+  document.getElementById("combinedCustomer").value=String(id);
+  document.getElementById("combinedItemName").value="";
   document.getElementById("cName").value=customer.name||"";
   document.getElementById("cTaxId").value=customer.tax_id||"";
   document.getElementById("cContact").value=customer.contact_name||"";
@@ -1024,13 +1065,17 @@ window.editCustomer=function(id){
   document.getElementById("cNote").value=customer.note||"";
   document.getElementById("customers").scrollIntoView({behavior:"smooth"});
 };
+
 window.cancelCustomerEdit=function(){
-  editingCustomerId=null;
+  editingCustomerId=null; editingCustomerItemId=null;
   document.getElementById("customerFormTitle").textContent="新增客戶";
-  document.getElementById("customerSaveBtn").textContent="儲存客戶";
+  document.getElementById("customerSaveBtn").textContent="儲存客戶／項目";
   document.getElementById("customerCancelBtn").style.display="none";
+  document.getElementById("combinedCustomer").value="";
+  document.getElementById("combinedItemName").value="";
   ["cName","cTaxId","cContact","cPhone","cAddress","cNote"].forEach(id=>document.getElementById(id).value="");
 };
+
 window.deleteCustomer=async function(id){
   if(!confirm("確定要刪除這位客戶嗎？如果此客戶已有項目或趟次資料，資料庫可能會阻擋刪除。"))return;
   const {error}=await client.from("customers").delete().eq("id",id);
@@ -1038,95 +1083,68 @@ window.deleteCustomer=async function(id){
   if(String(editingCustomerId)===String(id))cancelCustomerEdit();
   await loadCustomers();
 };
+
 async function loadCustomers(){
   const {data,error}=await client.from("customers").select("*").order("created_at",{ascending:false});
   if(error){console.error(error);return}
   customers=data||[];
-  const list=document.getElementById("customerList"); list.innerHTML="";
-  const selects=[document.getElementById("itemCustomer"),document.getElementById("tripCustomer")];
-  selects.forEach(select=>select.innerHTML='<option value="">請選擇客戶</option>');
+  const combined=document.getElementById("combinedCustomer");
+  const tripCustomer=document.getElementById("tripCustomer");
+  if(combined)combined.innerHTML='<option value="">新增客戶（請填寫下方公司抬頭）</option>';
+  if(tripCustomer)tripCustomer.innerHTML='<option value="">請選擇客戶</option>';
   const reportCustomer=document.getElementById("reportCustomer");
-  reportCustomer.innerHTML='<option value="">全部客戶</option>';
+  if(reportCustomer)reportCustomer.innerHTML='<option value="">全部客戶</option>';
+  const list=document.getElementById("customerList");
+  if(list)list.innerHTML="";
   customers.forEach(customer=>{
-    const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customer.name)}</td><td>${safe(customer.tax_id)}</td><td>${safe(customer.contact_name)}</td><td>${safe(customer.phone)}</td><td>${safe(customer.address)}</td><td>${safe(customer.note)}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomer(${customer.id})">修改</button><button class="btn-danger" onclick="deleteCustomer(${customer.id})">刪除</button></div></td>`;
-    list.appendChild(row);
-    selects.forEach(select=>{
-      const opt=document.createElement("option");opt.value=customer.id;opt.textContent=customer.name;select.appendChild(opt);
+    if(list){
+      const row=document.createElement("tr");
+      row.innerHTML=`<td>${safe(customer.name)}</td><td>${safe(customer.tax_id)}</td><td>${safe(customer.contact_name)}</td><td>${safe(customer.phone)}</td><td>${safe(customer.address)}</td><td>${safe(customer.note)}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomer(${customer.id})">修改</button><button class="btn-danger" onclick="deleteCustomer(${customer.id})">刪除</button></div></td>`;
+      list.appendChild(row);
+    }
+    [combined,tripCustomer].forEach(select=>{
+      if(!select)return;
+      const opt=document.createElement("option"); opt.value=customer.id; opt.textContent=customer.name; select.appendChild(opt);
     });
-    const reportOpt=document.createElement("option");
-    reportOpt.value=customer.id;
-    reportOpt.textContent=customer.name;
-    reportCustomer.appendChild(reportOpt);
+    if(reportCustomer){
+      const ro=document.createElement("option"); ro.value=customer.id; ro.textContent=customer.name; reportCustomer.appendChild(ro);
+    }
   });
-  await loadCustomerItems();
-  await loadCustomerQuoteReport();
+  renderTripSettlementDriverFilter();
 }
-
-async function addCustomerItem(){
-  const customer_id=document.getElementById("itemCustomer").value;
-  const name=document.getElementById("itemName").value.trim();
-  const customer_price=0;
-  const driver_fee=Number(document.getElementById("itemDriverFee").value||0);
-  const note=document.getElementById("itemNote").value.trim();
-  if(!customer_id){alert("請選擇客戶");return}
-  if(!name){alert("請輸入項目名稱");return}
-  if(driver_fee<0){alert("司機費不能小於 0");return}
-  const duplicate=customerItems.find(i=>i.active && String(i.customer_id)===String(customer_id) && String(i.name).trim()===name && String(i.id)!==String(editingCustomerItemId||''));
-  if(duplicate){alert("這個客戶已經有相同的項目名稱。");return}
-
-  if(editingCustomerItemId){
-    const {error}=await client.from("customer_items").update({customer_id,name,customer_price,driver_fee,note}).eq("id",editingCustomerItemId);
-    if(error){alert("客戶項目修改失敗："+error.message);return}
-    alert("客戶項目修改成功");
-  }else{
-    const {error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note,active:true});
-    if(error){alert("客戶項目儲存失敗："+error.message);return}
-    alert("客戶項目儲存成功");
-  }
-  cancelCustomerItemEdit();
-  await loadCustomerItems();
-  await loadCustomerQuoteReport();
-  await loadTripItems();
-}
-window.editCustomerItem=function(id){
-  const item=customerItems.find(i=>String(i.id)===String(id));
-  if(!item)return;
-  editingCustomerItemId=id;
-  document.getElementById("itemCustomer").value=String(item.customer_id);
-  document.getElementById("itemName").value=item.name||"";
-  document.getElementById("itemDriverFee").value=item.driver_fee??"";
-  document.getElementById("itemNote").value=item.note||"";
-  document.getElementById("customerItemSaveBtn").textContent="儲存修改";
-  document.getElementById("customerItemCancelBtn").style.display="inline-block";
-  document.getElementById("itemName")?.focus();
-  window.scrollTo({top:document.getElementById("itemCustomer")?.getBoundingClientRect().top + window.scrollY - 100,behavior:"smooth"});
-};
-window.cancelCustomerItemEdit=function(){
-  editingCustomerItemId=null;
-  ["itemName","itemDriverFee","itemNote"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("itemCustomer").value="";
-  document.getElementById("customerItemSaveBtn").textContent="儲存客戶項目";
-  document.getElementById("customerItemCancelBtn").style.display="none";
-};
 
 async function loadCustomerItems(){
   const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
   if(error){console.error(error);return}
   customerItems=data||[];
-  const list=document.getElementById("customerItemList"); list.innerHTML="";
+  const list=document.getElementById("customerItemList"); if(!list)return;
+  list.innerHTML="";
   customerItems.forEach(item=>{
     const customerName=item.customers?item.customers.name:"";
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${money(item.driver_fee)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
+window.editCustomerItem=function(id){
+  const item=customerItems.find(i=>String(i.id)===String(id));
+  if(!item)return;
+  editingCustomerItemId=id; editingCustomerId=null;
+  document.getElementById("customerFormTitle").textContent="修改客戶項目";
+  document.getElementById("customerSaveBtn").textContent="儲存項目修改";
+  document.getElementById("customerCancelBtn").style.display="inline-block";
+  document.getElementById("combinedCustomer").value=String(item.customer_id);
+  document.getElementById("combinedItemName").value=item.name||"";
+  loadCombinedCustomer();
+  document.getElementById("combinedItemName").focus();
+  document.getElementById("customers").scrollIntoView({behavior:"smooth"});
+};
+window.cancelCustomerItemEdit=function(){cancelCustomerEdit()};
 window.deleteCustomerItem=async function(id){
   if(!confirm("確定要刪除這個客戶項目嗎？"))return;
   const {error}=await client.from("customer_items").delete().eq("id",id);
   if(error){alert("刪除失敗："+error.message);return}
-  await loadCustomerItems(); await loadTripItems();
+  await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
 };
 
 window.loadCustomerQuoteReport=async function(){
@@ -1160,72 +1178,48 @@ window.closeQuickItemModal=function(event){
 window.saveQuickTripItem=async function(){
   const customer_id=document.getElementById("tripCustomer").value;
   const name=document.getElementById("quickItemName").value.trim();
-  const customer_price=0;
-  const driver_fee=Number(document.getElementById("quickItemDriverFee").value||0);
   if(!customer_id){alert("請先選擇客戶。");return}
   if(!name){alert("請輸入項目名稱。");return}
-  if(driver_fee<0){alert("司機費不能小於 0。");return}
   const duplicate=customerItems.find(i=>i.active && String(i.customer_id)===String(customer_id) && String(i.name).trim()===name);
   if(duplicate){alert("這個客戶已經有相同的項目名稱。");return}
-  const {data,error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note:"",active:true}).select("*, customers(name)").single();
+  const {data,error}=await client.from("customer_items").insert({
+    customer_id,name,customer_price:0,driver_fee:0,note:"",active:true
+  }).select("*, customers(name)").single();
   if(error){alert("新增項目失敗："+error.message);return}
-  await loadCustomerItems();
-  await loadCustomerQuoteReport();
-  await loadTripItems();
+  await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
   if(data?.id){document.getElementById("tripItem").value=String(data.id);previewTripPrice()}
+  document.getElementById("quickItemName").value="";
   document.getElementById("quickItemModal").style.display="none";
-  alert("項目新增成功，已加入目前客戶的下拉選單。");
+  alert("項目新增成功，司機費請在本趟趟次中自行輸入。");
 };
 
 window.loadTripItems=async function(){
   const customerId=document.getElementById("tripCustomer").value;
   const select=document.getElementById("tripItem");
   select.innerHTML='<option value="">請選擇項目</option>';
-  if(!customerId){
-    previewTripPrice();
-    return;
-  }
-
-  // 每次選擇客戶時，直接從資料庫重新抓取該客戶目前的啟用項目，
-  // 讓「客戶與項目」頁新增／修改／刪除的項目能即時同步到「司機趟次」。
-  const {data,error}=await client
-    .from("customer_items")
+  if(!customerId){previewTripPrice();return}
+  const {data,error}=await client.from("customer_items")
     .select("*, customers(name)")
     .eq("customer_id",customerId)
     .eq("active",true)
     .order("created_at",{ascending:false});
-
-  if(error){
-    console.error(error);
-    alert("客戶項目讀取失敗："+error.message);
-    previewTripPrice();
-    return;
-  }
-
-  // 同步更新本地項目資料，保留其他客戶的項目
+  if(error){console.error(error);alert("客戶項目讀取失敗："+error.message);previewTripPrice();return}
   const others=customerItems.filter(i=>String(i.customer_id)!==String(customerId));
   customerItems=[...others,...(data||[])];
-
   (data||[]).forEach(item=>{
     const opt=document.createElement("option");
-    opt.value=item.id;
-    opt.textContent=item.name;
-    opt.dataset.customerPrice=item.customer_price;
-    opt.dataset.driverFee=item.driver_fee;
-    select.appendChild(opt);
+    opt.value=item.id; opt.textContent=item.name; select.appendChild(opt);
   });
-
   previewTripPrice();
 };
 window.previewTripPrice=function(){
-  const select=document.getElementById("tripItem");
-  const opt=select.options[select.selectedIndex];
-  const driverFee=Number(opt?.dataset.driverFee||0);
-  const quantity=Number(document.getElementById("tripQuantity").value||0);
-  document.getElementById("tripDriverFee").textContent=money(driverFee);
-  document.getElementById("tripDriverTotal").textContent=money(driverFee*quantity);
+  const fee=Number(document.getElementById("tripDriverFeeInput")?.value||0);
+  const fuel=Number(document.getElementById("tripFuel")?.value||0);
+  document.getElementById("tripDriverTotal").textContent=money(fee);
+  document.getElementById("tripFuelTotal").textContent=money(fuel);
 };
-document.getElementById("tripQuantity").addEventListener("input",previewTripPrice);
+document.getElementById("tripDriverFeeInput").addEventListener("input",previewTripPrice);
+document.getElementById("tripFuel").addEventListener("input",previewTripPrice);
 
 const tripTimeInput=document.getElementById("tripTime");
 if(tripTimeInput){
@@ -1271,20 +1265,14 @@ window.saveTrip=async function(){
   let trip_time=document.getElementById("tripTime").value.trim()||null;
   if(trip_time){
     const m=trip_time.match(/^(\d{1,2}):(\d{2})$/);
-    if(!m){
-      alert("時間請輸入 24 小時制，例如 08:00 或 18:30");
-      return;
-    }
+    if(!m){alert("時間請輸入 24 小時制，例如 08:00 或 18:30");return}
     const hh=Number(m[1]), mm=Number(m[2]);
-    if(hh<0||hh>23||mm<0||mm>59){
-      alert("時間格式不正確，請輸入 00:00～23:59");
-      return;
-    }
+    if(hh<0||hh>23||mm<0||mm>59){alert("時間格式不正確，請輸入 00:00～23:59");return}
     trip_time=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
   }
   const customer_id=document.getElementById("tripCustomer").value;
   const customer_item_id=document.getElementById("tripItem").value||null;
-  const quantity=Number(document.getElementById("tripQuantity").value||0);
+  const driver_fee=Number(document.getElementById("tripDriverFeeInput").value||0);
   const description=document.getElementById("tripDescription").value.trim();
   const note=document.getElementById("tripNote").value.trim();
   const fuel_cost=Number(document.getElementById("tripFuel").value||0);
@@ -1294,17 +1282,15 @@ window.saveTrip=async function(){
   if(trip_time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(trip_time)){alert("時間請輸入 24 小時制，例如 08:00 或 13:30");return}
   if(!customer_id){alert("請選擇客戶");return}
   if(!customer_item_id||!item){alert("請選擇客戶項目");return}
-  if(quantity<=0){alert("趟數必須大於 0");return}
+  if(driver_fee<0){alert("司機費不能小於 0");return}
+  if(fuel_cost<0){alert("油資不能小於 0");return}
   const payload={
     employee_id,trip_date,trip_time,customer_id,customer_item_id,description,
-    quantity,customer_price:Number(item.customer_price||0),driver_fee:Number(item.driver_fee||0),fuel_cost,note
+    quantity:1,customer_price:0,driver_fee,fuel_cost,note
   };
-  let result;
-  if(editingTripId){
-    result=await client.from("driver_trips").update(payload).eq("id",editingTripId);
-  }else{
-    result=await client.from("driver_trips").insert(payload);
-  }
+  const result=editingTripId
+    ? await client.from("driver_trips").update(payload).eq("id",editingTripId)
+    : await client.from("driver_trips").insert(payload);
   if(result.error){alert("儲存失敗："+result.error.message);return}
   alert(editingTripId?"趟次修改成功":"趟次儲存成功");
   cancelTripEdit();
@@ -1324,7 +1310,7 @@ window.editTrip=async function(id){
   document.getElementById("tripCustomer").value=trip.customer_id;
   await loadTripItems();
   document.getElementById("tripItem").value=trip.customer_item_id||"";
-  document.getElementById("tripQuantity").value=trip.quantity;
+  document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
   document.getElementById("tripDescription").value=trip.description||"";
   document.getElementById("tripNote").value=trip.note||"";
   previewTripPrice();
@@ -1340,8 +1326,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripTime").value="08:00";
   document.getElementById("tripCustomer").value="";
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
-  document.getElementById("tripQuantity").value=1;
-  document.getElementById("tripDescription").value="";
+    document.getElementById("tripDescription").value="";
   document.getElementById("tripFuel").value=0;
   document.getElementById("tripNote").value="";
   previewTripPrice();
@@ -1520,20 +1505,22 @@ async function loadTripSummary(){
 
 async function loadDashboard(){
   const month=currentMonth(),{start,next}=monthRange(month);
-  const {data,error}=await client.from("driver_trips").select("quantity,driver_fee,salary_excluded").gte("trip_date",start).lt("trip_date",next);
+  const {data,error}=await client.from("driver_trips").select("quantity,driver_fee,fuel_cost,salary_excluded").gte("trip_date",start).lt("trip_date",next);
   if(error){console.error(error);return}
-  let trips=0,income=0,pay=0;
+  let trips=0,pay=0,fuel=0;
   (data||[]).forEach(item=>{
     const q=Number(item.quantity||0);
     trips+=q;
-    const amount=q*Number(item.driver_fee||0);
-    income+=amount;
-    if(!item.salary_excluded)pay+=amount;
+    if(!item.salary_excluded){
+      pay+=q*Number(item.driver_fee||0);
+      fuel+=Number(item.fuel_cost||0);
+    }
   });
+  const netPay=pay-fuel;
   document.getElementById("dashTrips").textContent=trips;
-  document.getElementById("dashIncome").textContent=money(income);
   document.getElementById("dashDriverPay").textContent=money(pay);
-  document.getElementById("dashGrossProfit").textContent=money(income-pay);
+  document.getElementById("dashFuel").textContent=money(fuel);
+  document.getElementById("dashNetPay").textContent=money(netPay);
 }
 
 
@@ -1619,13 +1606,13 @@ window.exportDriverSettlementExcel=function(){
   const d=window.driverSalaryPreviewData;
   const rows=d.rows.map(r=>({
     "日期":r.date||"", "時間":r.time||"", "司機":d.driverName||"", "車牌":d.plate||"",
-    "客戶":r.customer||"", "項目":r.item||"", "地點":r.location||"", "趟數":r.qty,
-    "司機薪資":r.salary, "油資":r.fuel, "司機實領":r.net, "本月薪資":r.excluded?"不計薪":"計入"
+    "客戶":r.customer||"", "項目":r.item||"", "地點":r.location||"", "司機費":r.salary,
+    "油資":r.fuel, "司機實領":r.net, "本月薪資":r.excluded?"不計薪":"計入"
   }));
   if(!rows.length){alert("這個月份目前沒有趟次資料。");return}
-  rows.push({"日期":"","時間":"","司機":"合計","車牌":"","客戶":"","項目":"","地點":"","趟數":d.totalTrips,"司機薪資":d.grossSalary,"油資":d.fuelCost,"司機實領":d.netSalary,"本月薪資":""});
+  rows.push({"日期":"","時間":"","司機":"合計","車牌":"","客戶":"","項目":"","地點":"","司機費":d.grossSalary,"油資":d.fuelCost,"司機實領":d.netSalary,"本月薪資":""});
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:10},{wch:14},{wch:14},{wch:14},{wch:12}];
+  ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:14},{wch:14},{wch:14},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
   XLSX.writeFile(wb,`司機薪資結算_${d.month}_${d.driverName||"司機"}.xlsx`);
 };
@@ -1673,8 +1660,8 @@ async function loadTripSalaryPreview(){
 
 function renderDriverSalaryPreview(){
   const d=window.driverSalaryPreviewData; const el=document.getElementById("driverSalarySettlementPreview"); if(!d||!el)return;
-  const detailRows=d.rows.length?d.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${safe(formatBillDate(r.date))}</td><td>${safe(r.time)}</td><td>${safe(r.customer)}</td><td>${safe(r.item)}</td><td>${safe(r.location)}</td><td>${r.qty}</td><td class="money">${money(r.salary)}</td><td class="money">${money(r.fuel)}</td><td>${r.excluded?'<span style="color:#b91c1c;font-weight:700">不計薪</span>':'計入'}</td></tr>`).join(""):`<tr><td colspan="10">本月份尚無趟次資料</td></tr>`;
-  el.innerHTML=`<div class="billing-head"><h1>晨 安 企 業</h1></div><div class="billing-meta"><div>司機：${safe(d.driverName)}</div><div>月份：${safe(monthLabel(d.month))}</div><div>車牌：${safe(d.plate)}</div><div>日期：${safe(today())}</div></div><table><thead><tr><th>項次</th><th>日期</th><th>時間</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>狀態</th></tr></thead><tbody>${detailRows}<tr class="billing-total"><td colspan="6">合計</td><td>${d.totalTrips}</td><td class="money">${money(d.grossSalary)}</td><td class="money">${money(d.fuelCost)}</td><td>計入</td></tr><tr class="billing-total"><td colspan="7">總領薪資</td><td colspan="2" class="money">${money(d.netSalary)}</td><td></td></tr>${d.excludedCount?`<tr class="billing-total"><td colspan="7">不計薪趟次（保留紀錄）</td><td colspan="2" class="money">${money(d.excludedSalary)}</td><td>${d.excludedCount} 筆</td></tr>`:""}</tbody></table><div class="billing-footer"><strong>計算方式：</strong>司機薪資 − 油資 ＝ 總領薪資</div>`;
+  const detailRows=d.rows.length?d.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${safe(formatBillDate(r.date))}</td><td>${safe(r.time)}</td><td>${safe(r.customer)}</td><td>${safe(r.item)}</td><td>${safe(r.location)}</td><td class="money">${money(r.salary)}</td><td class="money">${money(r.fuel)}</td><td>${r.excluded?'<span style="color:#b91c1c;font-weight:700">不計薪</span>':'計入'}</td></tr>`).join(""):`<tr><td colspan="9">本月份尚無趟次資料</td></tr>`;
+  el.innerHTML=`<div class="billing-head"><h1>晨 安 企 業</h1></div><div class="billing-meta"><div>司機：${safe(d.driverName)}</div><div>月份：${safe(monthLabel(d.month))}</div><div>車牌：${safe(d.plate)}</div><div>日期：${safe(today())}</div></div><table><thead><tr><th>項次</th><th>日期</th><th>時間</th><th>客戶</th><th>項目</th><th>地點</th><th>司機費</th><th>油資</th><th>狀態</th></tr></thead><tbody>${detailRows}<tr class="billing-total"><td colspan="6">合計</td><td class="money">${money(d.grossSalary)}</td><td class="money">${money(d.fuelCost)}</td><td>共 ${d.totalTrips} 趟</td></tr><tr class="billing-total"><td colspan="6">總領薪資</td><td colspan="2" class="money">${money(d.netSalary)}</td><td></td></tr>${d.excludedCount?`<tr class="billing-total"><td colspan="7">不計薪趟次（保留紀錄）</td><td colspan="2" class="money">${money(d.excludedSalary)}</td><td>${d.excludedCount} 筆</td></tr>`:""}</tbody></table><div class="billing-footer"><strong>計算方式：</strong>司機薪資 − 油資 ＝ 總領薪資</div>`;
 }
 
 window.saveDriverSalarySettlement=async function(){

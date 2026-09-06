@@ -244,8 +244,8 @@ th{background:#f5f7f8}
 <h2 id="tripFormTitle">新增司機趟次</h2>
 <div class="grid trip-form-grid">
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
-<div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="date"></div>
-<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" placeholder="例如：08:00" autocomplete="off"></div>
+<div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
+<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="time" step="60" placeholder="08:00"></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
 <div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
@@ -412,6 +412,19 @@ function safe(value){
   div.textContent=value ?? "";
   return div.innerHTML;
 }
+function displayDate(v){
+  const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[1]}/${m[2]}/${m[3]}` : String(v||'');
+}
+function normalizeDate(v){
+  const raw=String(v||'').trim().replace(/[.\-]/g,'/');
+  const m=raw.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if(!m)return '';
+  const y=Number(m[1]), mo=Number(m[2]), d=Number(m[3]);
+  const dt=new Date(y,mo-1,d);
+  if(dt.getFullYear()!==y || dt.getMonth()!==mo-1 || dt.getDate()!==d)return '';
+  return `${String(y).padStart(4,'0')}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
 function today(){
   const d=new Date();
   const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
@@ -492,7 +505,7 @@ async function showApp(){
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("app").style.display="block";
   document.getElementById("tDate").value=today();
-  document.getElementById("tripDate").value=today();
+  document.getElementById("tripDate").value=displayDate(today());
   document.getElementById("tripTime").value="08:00";
   document.getElementById("calendarMonth").value=currentMonth();
   document.getElementById("calendarDate").value=today();
@@ -834,12 +847,40 @@ window.loadTripItems=async function(){
   const customerId=document.getElementById("tripCustomer").value;
   const select=document.getElementById("tripItem");
   select.innerHTML='<option value="">請選擇項目</option>';
-  customerItems.filter(i=>String(i.customer_id)===String(customerId)&&i.active).forEach(item=>{
+  if(!customerId){
+    previewTripPrice();
+    return;
+  }
+
+  // 每次選擇客戶時，直接從資料庫重新抓取該客戶目前的啟用項目，
+  // 讓「客戶與項目」頁新增／修改／刪除的項目能即時同步到「司機趟次」。
+  const {data,error}=await client
+    .from("customer_items")
+    .select("*, customers(name)")
+    .eq("customer_id",customerId)
+    .eq("active",true)
+    .order("created_at",{ascending:false});
+
+  if(error){
+    console.error(error);
+    alert("客戶項目讀取失敗："+error.message);
+    previewTripPrice();
+    return;
+  }
+
+  // 同步更新本地項目資料，保留其他客戶的項目
+  const others=customerItems.filter(i=>String(i.customer_id)!==String(customerId));
+  customerItems=[...others,...(data||[])];
+
+  (data||[]).forEach(item=>{
     const opt=document.createElement("option");
-    opt.value=item.id;opt.textContent=item.name;
-    opt.dataset.customerPrice=item.customer_price;opt.dataset.driverFee=item.driver_fee;
+    opt.value=item.id;
+    opt.textContent=item.name;
+    opt.dataset.customerPrice=item.customer_price;
+    opt.dataset.driverFee=item.driver_fee;
     select.appendChild(opt);
   });
+
   previewTripPrice();
 };
 window.previewTripPrice=function(){
@@ -855,17 +896,23 @@ window.previewTripPrice=function(){
 };
 document.getElementById("tripQuantity").addEventListener("input",previewTripPrice);
 
-// 時間改為 24 小時制，可直接輸入，例如 08:00、13:30
-document.getElementById("tripTime").addEventListener("input",function(){
-  let v=this.value.replace(/\D/g,"").slice(0,4);
-  if(v.length>2) v=v.slice(0,2)+":"+v.slice(2);
+// 日期可直接輸入，格式：YYYY/MM/DD
+document.getElementById("tripDate").addEventListener("input",function(){
+  let v=this.value.replace(/\D/g,"").slice(0,8);
+  if(v.length>4) v=v.slice(0,4)+"/"+v.slice(4);
+  if(v.length>7) v=v.slice(0,7)+"/"+v.slice(7);
   this.value=v;
+});
+document.getElementById("tripDate").addEventListener("blur",function(){
+  if(!this.value.trim())return;
+  const iso=normalizeDate(this.value);
+  if(iso)this.value=displayDate(iso);
 });
 
 
 window.saveTrip=async function(){
   const employee_id=document.getElementById("tripDriver").value;
-  const trip_date=document.getElementById("tripDate").value;
+  const trip_date=normalizeDate(document.getElementById("tripDate").value);
   const trip_time=document.getElementById("tripTime").value||null;
   const customer_id=document.getElementById("tripCustomer").value;
   const customer_item_id=document.getElementById("tripItem").value||null;
@@ -875,7 +922,7 @@ window.saveTrip=async function(){
   const fuel_cost=Number(document.getElementById("tripFuel").value||0);
   const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
   if(!employee_id){alert("請選擇司機");return}
-  if(!trip_date){alert("請選擇日期");return}
+  if(!trip_date){alert("日期請輸入正確格式，例如 2026/09/06");return}
   if(trip_time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(trip_time)){alert("時間請輸入 24 小時制，例如 08:00 或 13:30");return}
   if(!customer_id){alert("請選擇客戶");return}
   if(!customer_item_id||!item){alert("請選擇客戶項目");return}
@@ -903,7 +950,7 @@ window.editTrip=async function(id){
   document.getElementById("tripSaveBtn").textContent="儲存修改";
   document.getElementById("tripCancelBtn").style.display="block";
   document.getElementById("tripDriver").value=trip.employee_id;
-  document.getElementById("tripDate").value=trip.trip_date;
+  document.getElementById("tripDate").value=displayDate(trip.trip_date);
   document.getElementById("tripTime").value=trip.trip_time||"";
    document.getElementById("tripFuel").value=Number(trip.fuel_cost||0);
   document.getElementById("tripCustomer").value=trip.customer_id;
@@ -921,7 +968,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripSaveBtn").textContent="儲存趟次";
   document.getElementById("tripCancelBtn").style.display="none";
   document.getElementById("tripDriver").value="";
-  document.getElementById("tripDate").value=today();
+  document.getElementById("tripDate").value=displayDate(today());
   document.getElementById("tripTime").value="08:00";
   document.getElementById("tripCustomer").value="";
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';

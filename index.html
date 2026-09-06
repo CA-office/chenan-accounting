@@ -30,6 +30,10 @@ button:hover{opacity:.9}
 .tabs button.active{background:#37474f;color:#fff}
 .section{display:none}.section.active{display:block}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.form-field{min-width:0}.form-field label,.field-label{display:block;font-size:15px;font-weight:700;color:#455a64;margin:0 0 7px 2px;line-height:1.2}.form-field input,.form-field select{margin:0}.trip-form-grid{gap:14px 16px}.toolbar-field{display:flex;flex-direction:column;gap:4px}.toolbar-field label{font-size:14px;font-weight:700;color:#455a64;margin-left:2px}.toolbar-field input,.toolbar-field select{margin:0}
+.select-with-action{display:flex;gap:8px;align-items:stretch}.select-with-action select{flex:1;min-width:0}.quick-add-item-btn{width:auto;white-space:nowrap;padding:0 14px;margin:0;font-weight:700}.quick-add-item-btn:hover{opacity:.92}
+@media(max-width:600px){.select-with-action{flex-direction:column}.quick-add-item-btn{width:100%;min-height:44px}}
+
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .summary-box{padding:18px;border-radius:14px;background:#eceff1;text-align:center}
@@ -122,8 +126,8 @@ th{background:#f5f7f8}
 <div id="loginScreen" class="container">
 <div class="card">
 <h2>管理員登入</h2>
-<input id="loginEmail" type="email" placeholder="Email">
-<input id="loginPassword" type="password" placeholder="密碼">
+<div class="form-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" placeholder="請輸入 Email"></div>
+<div class="form-field"><label for="loginPassword">密碼</label><input id="loginPassword" type="password" placeholder="請輸入密碼"></div>
 <button onclick="login()">登入</button>
 <div id="loginMessage" class="message"></div>
 </div>
@@ -166,14 +170,14 @@ th{background:#f5f7f8}
 <div class="card">
 <h2>新增收入／支出</h2>
 <div class="grid">
-<input id="tDate" type="date">
-<select id="tType"><option value="收入">收入</option><option value="支出">支出</option></select>
-<input id="tCategory" placeholder="類別，例如：銷貨收入、材料費">
-<input id="tDescription" placeholder="內容說明">
-<input id="tAmount" type="number" placeholder="金額">
-<select id="tPayment"><option value="現金">現金</option><option value="銀行轉帳">銀行轉帳</option><option value="支票">支票</option><option value="其他">其他</option></select>
+<div class="form-field"><label for="tDate">日期</label><input id="tDate" type="date"></div>
+<div class="form-field"><label for="tType">類型</label><select id="tType"><option value="收入">收入</option><option value="支出">支出</option></select></div>
+<div class="form-field"><label for="tCategory">類別</label><input id="tCategory" placeholder="例如：銷貨收入、材料費"></div>
+<div class="form-field"><label for="tDescription">內容說明</label><input id="tDescription" placeholder="請輸入內容說明"></div>
+<div class="form-field"><label for="tAmount">金額</label><input id="tAmount" type="number" placeholder="請輸入金額"></div>
+<div class="form-field"><label for="tPayment">付款方式</label><select id="tPayment"><option value="現金">現金</option><option value="銀行轉帳">銀行轉帳</option><option value="支票">支票</option><option value="其他">其他</option></select></div>
 </div>
-<textarea id="tNote" placeholder="備註"></textarea>
+<div class="form-field"><label for="tNote">備註</label><textarea id="tNote" placeholder="請輸入備註"></textarea></div>
 <button onclick="addTransaction()">儲存收支紀錄</button>
 </div>
 <div class="card">
@@ -189,11 +193,11 @@ th{background:#f5f7f8}
 <div class="card">
 <h2 id="employeeFormTitle">新增司機</h2>
 <div class="grid">
-<input id="eName" placeholder="司機姓名">
-<input id="ePhone" placeholder="電話">
-<input id="ePlate" placeholder="車牌號碼，例如 ABC-1234">
+<div class="form-field"><label for="eName">司機姓名</label><input id="eName" placeholder="請輸入司機姓名"></div>
+<div class="form-field"><label for="ePhone">電話</label><input id="ePhone" placeholder="請輸入電話"></div>
+<div class="form-field"><label for="ePlate">車牌</label><input id="ePlate" placeholder="例如 ABC-1234"></div>
 </div>
-<textarea id="eNote" placeholder="備註"></textarea>
+<div class="form-field"><label for="eNote">備註</label><textarea id="eNote" placeholder="請輸入備註"></textarea></div>
 <button id="employeeSaveBtn" onclick="addEmployee()">儲存司機</button><button id="employeeCancelBtn" class="btn-secondary" style="display:none" onclick="cancelEmployeeEdit()">取消修改</button>
 </div>
 <div class="card">
@@ -211,10 +215,10 @@ th{background:#f5f7f8}
 <h2>司機日曆</h2>
 <p style="opacity:.7">每位司機固定顏色，可切換全部司機或單一司機，並查看月、週、日行程。</p>
 <div class="calendar-toolbar">
-<input id="calendarMonth" type="month" onchange="syncCalendarFromMonth()">
-<input id="calendarDate" type="date" onchange="renderCalendar()">
-<select id="calendarDriver" onchange="renderCalendar()"><option value="">全部司機</option></select>
-<button class="btn-secondary" onclick="goCalendarToday()">今天</button>
+<div class="toolbar-field"><label for="calendarMonth">月份</label><input id="calendarMonth" type="month" onchange="syncCalendarFromMonth()"></div>
+<div class="toolbar-field"><label for="calendarDate">日期</label><input id="calendarDate" type="date" onchange="renderCalendar()"></div>
+<div class="toolbar-field"><label for="calendarDriver">司機</label><select id="calendarDriver" onchange="renderCalendar()"><option value="">全部司機</option></select></div>
+<div class="toolbar-field"><label>&nbsp;</label><button class="btn-secondary" onclick="goCalendarToday()">今天</button></div>
 <div class="calendar-view-buttons">
 <button id="viewMonthBtn" class="active" onclick="setCalendarView('month')">月</button>
 <button id="viewWeekBtn" onclick="setCalendarView('week')">週</button>
@@ -238,15 +242,15 @@ th{background:#f5f7f8}
 <section id="trips" class="section">
 <div class="card">
 <h2 id="tripFormTitle">新增司機趟次</h2>
-<div class="grid">
-<select id="tripDriver"><option value="">請選擇司機</option></select>
-<input id="tripDate" type="date">
-<input id="tripTime" type="time">
-<select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select>
-<select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select>
-<input id="tripQuantity" type="number" min="1" step="1" value="1" placeholder="趟數">
-<input id="tripDescription" placeholder="地點／項目，例如：台北→新竹">
-<input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="油資">
+<div class="grid trip-form-grid">
+<div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
+<div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="date"></div>
+<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="time"></div>
+<div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
+<div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
+<div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
+<div class="form-field"><label for="tripDescription">地點／項目說明</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
+<div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請輸入油資"></div>
 </div>
 <div class="price-preview">
 <div class="total-line"><span>客戶單價</span><span id="tripCustomerPrice">$0</span></div>
@@ -284,24 +288,24 @@ th{background:#f5f7f8}
 <div class="card">
 <h2>新增客戶</h2>
 <div class="grid">
-<input id="cName" placeholder="公司抬頭">
-<input id="cTaxId" placeholder="統一編號">
-<input id="cContact" placeholder="聯絡人">
-<input id="cPhone" placeholder="電話">
-<input id="cAddress" placeholder="地址">
+<div class="form-field"><label for="cName">公司抬頭</label><input id="cName" placeholder="請輸入公司抬頭"></div>
+<div class="form-field"><label for="cTaxId">統一編號</label><input id="cTaxId" placeholder="請輸入統一編號"></div>
+<div class="form-field"><label for="cContact">聯絡人</label><input id="cContact" placeholder="請輸入聯絡人"></div>
+<div class="form-field"><label for="cPhone">電話</label><input id="cPhone" placeholder="請輸入電話"></div>
+<div class="form-field"><label for="cAddress">地址</label><input id="cAddress" placeholder="請輸入地址"></div>
 </div>
-<textarea id="cNote" placeholder="備註"></textarea>
+<div class="form-field"><label for="cNote">備註</label><textarea id="cNote" placeholder="請輸入備註"></textarea></div>
 <button onclick="addCustomer()">儲存客戶</button>
 </div>
 
 <div class="card">
 <h2>新增客戶項目</h2>
-<select id="itemCustomer"><option value="">請選擇客戶</option></select>
+<div class="form-field"><label for="itemCustomer">客戶</label><select id="itemCustomer"><option value="">請選擇客戶</option></select></div>
 <div class="grid">
-<input id="itemName" placeholder="項目名稱，例如：台北→新竹">
-<input id="itemCustomerPrice" type="number" min="0" step="1" placeholder="客戶收費">
-<input id="itemDriverFee" type="number" min="0" step="1" placeholder="司機費">
-<input id="itemNote" placeholder="備註">
+<div class="form-field"><label for="itemName">項目名稱</label><input id="itemName" placeholder="例如：拍貼機、盆栽、五金"></div>
+<div class="form-field"><label for="itemCustomerPrice">客戶收費</label><input id="itemCustomerPrice" type="number" min="0" step="1" placeholder="請輸入客戶收費"></div>
+<div class="form-field"><label for="itemDriverFee">司機費</label><input id="itemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div>
+<div class="form-field"><label for="itemNote">備註</label><input id="itemNote" placeholder="請輸入備註"></div>
 </div>
 <button onclick="addCustomerItem()">儲存客戶項目</button>
 </div>
@@ -315,7 +319,7 @@ th{background:#f5f7f8}
 
 <div class="card" id="customerQuoteReportCard">
 <h2>客戶項目報價／成本報表</h2>
-<select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select>
+<div class="form-field"><label for="reportCustomer">客戶</label><select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select></div>
 <div class="report-actions">
 <button class="btn-green" onclick="exportCustomerQuoteExcel()">下載 Excel</button>
 <button onclick="exportCustomerQuotePDF()">下載 PDF</button>
@@ -345,15 +349,15 @@ th{background:#f5f7f8}
 <h2>新增請款單</h2>
 <p class="form-hint">選擇客戶與請款月份後，系統會自動抓取該客戶當月已登錄的司機趟次，整理成請款明細。</p>
 <div class="grid">
-<select id="billCustomer" onchange="loadBillingPreview()">
+<div class="form-field"><label for="billCustomer">客戶</label><select id="billCustomer" onchange="loadBillingPreview()">
 <option value="">請選擇客戶</option>
-</select>
-<input id="billMonth" type="month" onchange="loadBillingPreview()">
-<input id="billDate" type="date">
-<input id="billTaxRate" type="number" min="0" max="100" step="0.1" value="5" placeholder="營業稅率 %">
-<input id="billPayment" placeholder="付款方式／匯款資訊（可留白）">
+</select></div>
+<div class="form-field"><label for="billMonth">請款月份</label><input id="billMonth" type="month" onchange="loadBillingPreview()"></div>
+<div class="form-field"><label for="billDate">請款日期</label><input id="billDate" type="date"></div>
+<div class="form-field"><label for="billTaxRate">營業稅率</label><input id="billTaxRate" type="number" min="0" max="100" step="0.1" value="5" placeholder="例如 5"></div>
+<div class="form-field"><label for="billPayment">付款方式／匯款資訊</label><input id="billPayment" placeholder="可留白"></div>
 </div>
-<textarea id="billNote" placeholder="請款備註（可留白）"></textarea>
+<div class="form-field"><label for="billNote">請款備註</label><textarea id="billNote" placeholder="可留白"></textarea></div>
 <div class="report-actions">
 <button class="btn-green" onclick="saveBillingInvoice()">儲存請款單</button>
 <button class="btn-secondary" onclick="downloadBillingPDF()">下載請款單 PDF</button>
@@ -380,6 +384,8 @@ th{background:#f5f7f8}
 </main>
 </div>
 </div>
+
+<div id="quickItemModal" class="modal-backdrop" onclick="closeQuickItemModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶項目</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的項目下拉選單。</p><div class="form-field"><label for="quickItemName">項目名稱</label><input id="quickItemName" placeholder="例如：拍貼機、撼動、盆栽、五金"></div><div class="form-field"><label for="quickItemCustomerPrice">客戶收費</label><input id="quickItemCustomerPrice" type="number" min="0" step="1" placeholder="請輸入客戶收費"></div><div class="form-field"><label for="quickItemDriverFee">司機費</label><input id="quickItemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickItemModal()">取消</button><button onclick="saveQuickTripItem()">新增項目</button></div></div></div>
 
 <div id="calendarDetailModal" class="modal-backdrop" onclick="closeCalendarDetail(event)"><div class="modal" onclick="event.stopPropagation()"><h2>趟次詳細資料</h2><div id="calendarDetailBody"></div><button class="btn-secondary" onclick="closeCalendarDetail()">關閉</button></div></div>
 
@@ -684,6 +690,39 @@ window.loadCustomerQuoteReport=async function(){
   if(!rows.length)list.innerHTML='<tr><td colspan="5">目前沒有可用的客戶項目</td></tr>';
 };
 
+window.openQuickItemModal=function(){
+  const customerId=document.getElementById("tripCustomer")?.value||"";
+  if(!customerId){alert("請先選擇客戶，再新增這個客戶的項目。");return}
+  document.getElementById("quickItemName").value="";
+  document.getElementById("quickItemCustomerPrice").value="";
+  document.getElementById("quickItemDriverFee").value="";
+  document.getElementById("quickItemModal").style.display="flex";
+  setTimeout(()=>document.getElementById("quickItemName")?.focus(),50);
+};
+window.closeQuickItemModal=function(event){
+  if(event && event.target && event.target.id!=="quickItemModal")return;
+  document.getElementById("quickItemModal").style.display="none";
+};
+window.saveQuickTripItem=async function(){
+  const customer_id=document.getElementById("tripCustomer").value;
+  const name=document.getElementById("quickItemName").value.trim();
+  const customer_price=Number(document.getElementById("quickItemCustomerPrice").value||0);
+  const driver_fee=Number(document.getElementById("quickItemDriverFee").value||0);
+  if(!customer_id){alert("請先選擇客戶。");return}
+  if(!name){alert("請輸入項目名稱。");return}
+  if(customer_price<0 || driver_fee<0){alert("客戶收費與司機費不能小於 0。");return}
+  const duplicate=customerItems.find(i=>i.active && String(i.customer_id)===String(customer_id) && String(i.name).trim()===name);
+  if(duplicate){alert("這個客戶已經有相同的項目名稱。");return}
+  const {data,error}=await client.from("customer_items").insert({customer_id,name,customer_price,driver_fee,note:"",active:true}).select("*, customers(name)").single();
+  if(error){alert("新增項目失敗："+error.message);return}
+  await loadCustomerItems();
+  await loadCustomerQuoteReport();
+  await loadTripItems();
+  if(data?.id){document.getElementById("tripItem").value=String(data.id);previewTripPrice()}
+  document.getElementById("quickItemModal").style.display="none";
+  alert("項目新增成功，已加入目前客戶的下拉選單。");
+};
+
 window.loadTripItems=async function(){
   const customerId=document.getElementById("tripCustomer").value;
   const select=document.getElementById("tripItem");
@@ -973,8 +1012,16 @@ function calendarTripsForDate(date,driverId){
 }
 function eventButton(t){
   const ev=document.createElement('button'); ev.className='calendar-event'; ev.style.background=driverColor(t.employee_id); ev.style.borderLeftColor=driverColor(t.employee_id);
-  const time=t.trip_time||'未排時間',driver=t.employees?.name||'',customer=t.customers?.name||'',place=t.description||t.customer_items?.name||'',plate=employees.find(e=>String(e.id)===String(t.employee_id))?.license_plate||'';
-  ev.innerHTML=`<div class="time">${safe(time)}</div><div class="driver">${safe(driver)}</div>${plate?`<div class="plate">🚚 ${safe(plate)}</div>`:''}<div>${safe(customer)}</div><div>${safe(place)}</div>`;
+  const itemName=t.customer_items?.name||'未指定項目';
+  const rawDestination=String(t.description||'').trim();
+  let destination=rawDestination;
+  if(rawDestination.includes('→')) destination=rawDestination.split('→').pop().trim();
+  else if(rawDestination.includes('->')) destination=rawDestination.split('->').pop().trim();
+  else if(rawDestination.includes('－')) destination=rawDestination.split('－').pop().trim();
+  else if(rawDestination.includes('-')) destination=rawDestination.split('-').pop().trim();
+  const calendarText=destination ? `${itemName}｜${destination}` : itemName;
+  ev.innerHTML=`<div class="driver">${safe(calendarText)}</div>`;
+  ev.title=calendarText;
   ev.onclick=()=>showCalendarDetail(t); return ev;
 }
 function addDayCell(grid,date,opts={}){

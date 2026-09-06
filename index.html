@@ -278,7 +278,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
 <div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
-<div class="form-field"><label for="tripDescription">地點／項目說明</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
+<div class="form-field"><label for="tripDescription">地點</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
 <div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請輸入油資"></div>
 </div>
 <div class="price-preview">
@@ -319,11 +319,20 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripRecordMonth">查詢月份</label><input id="tripRecordMonth" type="month" onchange="loadTrips()"></div>
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
 </div>
+<div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
+  <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
+  <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
+  <div id="tripRecordSalaryExclusionCustomers" class="checkbox-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button type="button" class="btn-secondary" onclick="applyTripRecordSalaryExclusions(true)">套用不計薪</button>
+    <button type="button" class="btn-secondary" onclick="applyTripRecordSalaryExclusions(false)">恢復計入薪資</button>
+  </div>
+</div>
 <div class="billing-paper" id="tripDriverSalarySummary" style="margin-bottom:16px">
   <div class="billing-empty">請選擇月份與司機查看當月總領薪資</div>
 </div>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點／說明</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>本月薪資</th><th>操作</th>
+<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>項目</th><th>地點</th><th>趟數</th><th>司機薪資</th><th>油資</th><th>本月薪資</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -1369,6 +1378,47 @@ window.loadTripSalaryExclusionCustomers=async function(){
   const month=document.getElementById("tripMonth")?.value||currentMonth();
   await loadSalaryExclusionCustomersForMonth(month);
 };
+async function loadSalaryExclusionCustomersIntoBox(month, boxId, checkboxClass){
+  const box=document.getElementById(boxId);
+  if(!box)return;
+  const {start,next}=monthRange(month||currentMonth());
+  const {data,error}=await client.from("driver_trips").select("customer_id,customers(name),salary_excluded").gte("trip_date",start).lt("trip_date",next);
+  if(error){console.error(error);box.innerHTML='<div style="opacity:.7">無法讀取本月客戶</div>';return}
+  const map={};
+  (data||[]).forEach(t=>{
+    if(t.customer_id==null)return;
+    const id=String(t.customer_id);
+    if(!map[id])map[id]={id:t.customer_id,name:t.customers?.name||"未命名客戶",excluded:true};
+    map[id].excluded=map[id].excluded && !!t.salary_excluded;
+  });
+  const rows=Object.values(map).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant"));
+  box.innerHTML="";
+  if(!rows.length){box.innerHTML='<div style="opacity:.7">本月目前沒有趟次客戶</div>';return}
+  rows.forEach(c=>{
+    const label=document.createElement("label");
+    label.style.cssText="display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border:1px solid #e5e7eb;border-radius:9px;cursor:pointer";
+    label.innerHTML=`<input type="checkbox" class="${checkboxClass}" value="${safe(c.id)}" ${c.excluded?"checked":""}> <span>${safe(c.name)}</span>`;
+    box.appendChild(label);
+  });
+}
+window.loadTripRecordSalaryExclusionCustomers=async function(){
+  const month=document.getElementById("tripRecordMonth")?.value||currentMonth();
+  await loadSalaryExclusionCustomersIntoBox(month,"tripRecordSalaryExclusionCustomers","trip-record-salary-exclusion-customer");
+};
+window.applyTripRecordSalaryExclusions=async function(exclude){
+  const month=document.getElementById("tripRecordMonth")?.value||currentMonth();
+  const selected=[...document.querySelectorAll(".trip-record-salary-exclusion-customer:checked")].map(el=>el.value);
+  if(!selected.length){alert("請先勾選客戶。");return}
+  const {start,next}=monthRange(month);
+  const {data,error}=await client.from("driver_trips").select("id,customer_id").gte("trip_date",start).lt("trip_date",next).in("customer_id",selected);
+  if(error){alert("讀取趟次失敗："+error.message);return}
+  const ids=(data||[]).map(t=>t.id);
+  if(!ids.length){alert("這些客戶在本月沒有趟次紀錄。");return}
+  const result=await client.from("driver_trips").update({salary_excluded:exclude}).in("id",ids);
+  if(result.error){alert("更新失敗："+result.error.message);return}
+  alert(exclude?"已將勾選客戶的本月趟次設為「不計入司機薪資」。":"已恢復勾選客戶的本月趟次計入司機薪資。");
+  await loadTrips();
+};
 window.applySalaryExclusions=async function(exclude){
   const month=document.getElementById("tripMonth")?.value||currentMonth();
   const selected=[...document.querySelectorAll(".salary-exclusion-customer:checked")].map(el=>el.value);
@@ -1410,6 +1460,7 @@ async function loadTrips(){
   if(!window._tripCache.length)list.innerHTML='<tr><td colspan="11">這個月份目前沒有趟次紀錄</td></tr>';
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
+  await loadTripRecordSalaryExclusionCustomers();
 }
 async function loadTripRecordSalarySummary(month,driverId){
   const box=document.getElementById("tripDriverSalarySummary");
@@ -1437,7 +1488,7 @@ async function loadTripRecordSalarySummary(month,driverId){
   box.innerHTML=`
     <div style="padding:4px 2px">
       <div style="font-size:14px;opacity:.7;margin-bottom:6px">${safe(monthText)}｜${safe(driverText)}</div>
-      <div style="font-size:18px;font-weight:700;margin-bottom:12px">當月司機薪資結算</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:12px">薪資結算</div>
       <div class="grid" style="margin:0">
         <div><div style="opacity:.65;font-size:13px">總趟次</div><div style="font-size:20px;font-weight:700">${trips}</div></div>
         <div><div style="opacity:.65;font-size:13px">司機薪資</div><div style="font-size:20px;font-weight:700">${money(pay)}</div></div>
@@ -1578,7 +1629,7 @@ window.exportDriverSettlementExcel=function(){
       "車牌": employees.find(e=>String(e.id)===String(item.employee_id))?.license_plate||"",
       "客戶": item.customers?.name||"",
       "項目": item.customer_items?.name||"",
-      "地點／說明": item.description||"",
+      "地點": item.description||"",
       "趟數": Number(item.quantity||0),
       "司機薪資": Number(item.driver_fee||0)*Number(item.quantity||0),
       "油資": Number(item.fuel_cost||0),
@@ -1681,7 +1732,7 @@ function showCalendarDetail(t){
   <div class="modal-row"><span>司機</span><span>${safe(t.employees?.name)} ${plate?"｜"+safe(plate):""}</span></div>
   <div class="modal-row"><span>客戶</span><span>${safe(t.customers?.name)}</span></div>
   <div class="modal-row"><span>項目</span><span>${safe(t.customer_items?.name)}</span></div>
-  <div class="modal-row"><span>地點／說明</span><span>${safe(t.description)}</span></div>
+  <div class="modal-row"><span>地點</span><span>${safe(t.description)}</span></div>
   <div class="modal-row"><span>趟數</span><span>${safe(t.quantity)}</span></div>
   <div class="modal-row"><span>備註</span><span>${safe(t.note)}</span></div>`;
   document.getElementById("calendarDetailModal").classList.add("show");

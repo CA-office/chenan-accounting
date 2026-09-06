@@ -296,6 +296,11 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripMonth">結算月份</label><input id="tripMonth" type="month" onchange="loadTripSalaryPreview();loadTripSalaryExclusionCustomers()"></div>
 <div class="form-field"><label for="tripSettlementDriver">選擇司機</label><select id="tripSettlementDriver" onchange="loadTripSalaryPreview();loadSalaryExclusionCustomersForMonth(document.getElementById('tripMonth')?.value||currentMonth())"><option value="">請選擇司機</option></select></div>
 </div>
+<div class="report-actions" style="margin:14px 0 16px">
+<button class="btn-green" type="button" onclick="saveDriverSalarySettlement()">儲存薪資結算</button>
+<button class="btn-secondary" type="button" onclick="exportDriverSettlementPDF()">下載薪資結算 PDF</button>
+<button class="btn-secondary" type="button" onclick="exportDriverSettlementExcel()">下載薪資結算 Excel</button>
+</div>
 <div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
   <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
   <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
@@ -304,11 +309,6 @@ th{background:#f5f7f8}
     <button type="button" class="btn-secondary" onclick="applySalaryExclusions(true)">套用不計薪</button>
     <button type="button" class="btn-secondary" onclick="applySalaryExclusions(false)">恢復計入薪資</button>
   </div>
-</div>
-<div class="report-actions">
-<button class="btn-green" onclick="saveDriverSalarySettlement()">儲存薪資結算</button>
-<button class="btn-secondary" onclick="exportDriverSettlementPDF()">下載薪資結算 PDF</button>
-<button class="btn-secondary" onclick="exportDriverSettlementExcel()">下載薪資結算 Excel</button>
 </div>
 
 <div class="card" style="margin:14px 0 0;padding:0;border:0;box-shadow:none;background:transparent">

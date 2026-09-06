@@ -93,6 +93,24 @@ th{background:#f5f7f8}
 .modal-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #eee;padding:9px 0}.modal-row span:first-child{font-weight:700}
 @media(max-width:900px){.app-layout{display:block}.sidebar{width:100%;position:static;margin-bottom:14px}.sidebar button{width:48%;display:inline-block}.calendar-day{min-height:105px}}
 @media(max-width:600px){.sidebar button{width:100%}.calendar-grid{gap:3px}.calendar-day{min-height:90px;padding:4px}.calendar-event{font-size:11px;padding:4px}.calendar-weekday{font-size:12px;padding:7px}}
+
+
+.form-hint{margin:-6px 0 12px;color:#607d8b;font-size:14px}
+.billing-paper{background:#fff;border:1px solid #d7d7d7;padding:30px;max-width:980px;margin:auto;color:#111}
+.billing-head{text-align:center;margin-bottom:18px}
+.billing-head h1{margin:0;font-size:30px;letter-spacing:8px}
+.billing-head h2{margin:10px 0;font-size:24px;letter-spacing:6px}
+.billing-meta{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:10px 0;font-size:15px;font-weight:600}
+.billing-paper table{margin-top:10px;width:100%;border-collapse:collapse;font-size:14px}
+.billing-paper th,.billing-paper td{border:1px solid #333;padding:9px 7px;text-align:center;white-space:normal}
+.billing-paper th{background:#eee}
+.billing-paper .billing-total td{font-weight:700;font-size:15px}
+.billing-empty{text-align:center;color:#999;padding:50px 10px}
+.billing-footer{margin-top:14px;font-size:14px;line-height:1.6}
+.billing-paper .money{text-align:right;white-space:nowrap}
+.billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.billing-actions button{width:auto;margin:0}
+@media(max-width:700px){.billing-paper{padding:14px}.billing-head h1{font-size:23px}.billing-head h2{font-size:19px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper td{padding:6px 4px}}
 </style>
 </head>
 <body>
@@ -116,7 +134,7 @@ th{background:#f5f7f8}
 <button onclick="showTab('calendar',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M7 14h2M11 14h2M15 14h2M7 17h2M11 17h2"/></svg></span><span>司機日曆</span></button>
 <button onclick="showTab('trips',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18H6z"/><path d="M9 7h6M9 11h6M9 15h3"/><path d="m15 17 1.5 1.5L19 16"/></svg></span><span>趟次結算</span></button>
 <button onclick="showTab('customers',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M3 20c.5-4 2.5-6 6-6s5.5 2 6 6"/><path d="M16 6.5a3 3 0 0 1 0 5.5M16 14c2.8.2 4.5 2 5 5"/></svg></span><span>客戶</span></button>
-<button onclick="showTab('quotations',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6M9 18h4"/></svg></span><span>報價單</span></button>
+<button onclick="showTab('quotations',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4M9 11h6M9 15h6M9 18h4"/></svg></span><span>請款單</span></button>
 <button onclick="showTab('reports',this)"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/><path d="m4 8 6-3 6 4 6-6"/></svg></span><span>報表</span></button>
 <button onclick="logout()"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></svg></span><span>登出</span></button>
 </aside>
@@ -315,26 +333,40 @@ th{background:#f5f7f8}
 <div id="reportsContainer"></div>
 </section>
 
-<!-- 報價單 -->
+<!-- 請款單 -->
 <section id="quotations" class="section">
 <div class="card">
-<h2>新增客戶報價單</h2>
+<h2>新增請款單</h2>
+<p class="form-hint">選擇客戶與請款月份後，系統會自動抓取該客戶當月已登錄的司機趟次，整理成請款明細。</p>
 <div class="grid">
-<input id="qNumber" placeholder="報價單號，例如 Q20260001">
-<input id="qDate" type="date">
-<input id="qCustomer" placeholder="客戶名稱">
-<input id="qPhone" placeholder="客戶電話">
-<input id="qAddress" placeholder="客戶地址">
-<input id="qSubtotal" type="number" placeholder="未稅金額">
-<input id="qTax" type="number" placeholder="稅額" value="0">
+<select id="billCustomer" onchange="loadBillingPreview()">
+<option value="">請選擇客戶</option>
+</select>
+<input id="billMonth" type="month" onchange="loadBillingPreview()">
+<input id="billDate" type="date">
+<input id="billNumber" placeholder="請款單號，例如 INV202609001">
+<input id="billTaxRate" type="number" min="0" max="100" step="0.1" value="5" placeholder="營業稅率 %">
+<input id="billPayment" placeholder="付款方式／匯款資訊（可留白）">
 </div>
-<textarea id="qNote" placeholder="報價備註"></textarea>
-<button onclick="addQuotation()">建立報價單</button>
+<textarea id="billNote" placeholder="請款備註（可留白）"></textarea>
+<div class="report-actions">
+<button class="btn-green" onclick="saveBillingInvoice()">儲存請款單</button>
+<button class="btn-secondary" onclick="downloadBillingPDF()">下載請款單 PDF</button>
+<button class="btn-secondary" onclick="downloadBillingExcel()">下載請款明細 Excel</button>
 </div>
+</div>
+
 <div class="card">
-<h2>報價單紀錄</h2>
+<h2>請款單預覽</h2>
+<div id="billingPreview" class="billing-paper">
+  <div class="billing-empty">請先選擇客戶與月份</div>
+</div>
+</div>
+
+<div class="card">
+<h2>請款單紀錄</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>單號</th><th>日期</th><th>客戶</th><th>未稅</th><th>稅額</th><th>總額</th><th>狀態</th>
+<th>請款單號</th><th>日期</th><th>客戶</th><th>請款月份</th><th>未稅</th><th>營業稅</th><th>總計</th><th>狀態</th><th>操作</th>
 </tr></thead><tbody id="quotationList"></tbody></table></div>
 </div>
 </section>
@@ -450,8 +482,10 @@ async function showApp(){
   document.getElementById("calendarMonth").value=currentMonth();
   document.getElementById("calendarDate").value=today();
   document.getElementById("tripMonth").value=currentMonth();
-  document.getElementById("qDate").value=today();
+  document.getElementById("billDate").value=today();
+  document.getElementById("billMonth").value=currentMonth();
   await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
+  populateBillingCustomers();
   await loadDashboard();
   await loadTripSummary();
   await loadTrips();
@@ -984,39 +1018,194 @@ function showCalendarDetail(t){
 }
 function closeCalendarDetail(){document.getElementById("calendarDetailModal").classList.remove("show")}
 
-async function addQuotation(){
-  const number=document.getElementById("qNumber").value.trim();
-  const date=document.getElementById("qDate").value;
-  const customer=document.getElementById("qCustomer").value.trim();
-  const phone=document.getElementById("qPhone").value.trim();
-  const address=document.getElementById("qAddress").value.trim();
-  const subtotal=Number(document.getElementById("qSubtotal").value||0);
-  const tax=Number(document.getElementById("qTax").value||0);
-  const note=document.getElementById("qNote").value.trim();
-  if(!number){alert("請輸入報價單號");return}
-  if(!date){alert("請選擇報價日期");return}
-  if(!customer){alert("請輸入客戶名稱");return}
-  const {error}=await client.from("quotations").insert({
-    quote_number:number,quote_date:date,customer_name:customer,customer_phone:phone,
-    customer_address:address,subtotal,tax,total:subtotal+tax,status:"草稿",note
+let billingRows = [];
+let billingPreviewData = null;
+
+function formatTripQuantity(q){
+  const n=Number(q||0);
+  return Number.isInteger(n)?String(n):String(n);
+}
+function monthLabel(ym){
+  if(!ym)return "";
+  const [y,m]=ym.split("-");
+  return `${Number(m)} 月`;
+}
+function getBillingCustomer(){
+  const id=document.getElementById("billCustomer")?.value;
+  return customers.find(c=>String(c.id)===String(id));
+}
+function populateBillingCustomers(){
+  const sel=document.getElementById("billCustomer");
+  if(!sel)return;
+  const current=sel.value;
+  sel.innerHTML='<option value="">請選擇客戶</option>';
+  customers.forEach(c=>{
+    const o=document.createElement("option");
+    o.value=c.id;
+    o.textContent=c.name+(c.tax_id?`｜統編 ${c.tax_id}`:"");
+    sel.appendChild(o);
   });
-  if(error){alert("報價單建立失敗："+error.message);return}
-  alert("報價單建立成功");
-  ["qNumber","qDate","qCustomer","qPhone","qAddress","qSubtotal","qNote"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("qTax").value="0";
-  document.getElementById("qDate").value=today();
+  if(current)sel.value=current;
+}
+async function loadBillingPreview(){
+  populateBillingCustomers();
+  const customerId=document.getElementById("billCustomer")?.value;
+  const month=document.getElementById("billMonth")?.value;
+  const preview=document.getElementById("billingPreview");
+  if(!customerId || !month){
+    preview.innerHTML='<div class="billing-empty">請先選擇客戶與請款月份</div>';
+    billingRows=[]; billingPreviewData=null; return;
+  }
+  const {start,next}=monthRange(month);
+  const {data,error}=await client.from("driver_trips")
+    .select('*, employees(name), customers(name), customer_items(name)')
+    .eq("customer_id",customerId)
+    .gte("trip_date",start).lt("trip_date",next)
+    .order("trip_date",{ascending:true}).order("trip_time",{ascending:true});
+  if(error){console.error(error);alert("載入請款明細失敗："+error.message);return}
+  billingRows=(data||[]).map(t=>({
+    date:t.trip_date||"",
+    qty:Number(t.quantity||0),
+    area:t.description||t.customer_items?.name||"",
+    amount:Number(t.customer_price||0)*Number(t.quantity||0),
+    note:t.note||"",
+    time:t.trip_time||"",
+    driver:t.employees?.name||""
+  }));
+  renderBillingPreview();
+}
+function renderBillingPreview(){
+  const c=getBillingCustomer();
+  const month=document.getElementById("billMonth")?.value||"";
+  const date=document.getElementById("billDate")?.value||today();
+  const number=document.getElementById("billNumber")?.value.trim()||"（未設定）";
+  const rate=Number(document.getElementById("billTaxRate")?.value||0);
+  const payment=document.getElementById("billPayment")?.value.trim()||"";
+  const note=document.getElementById("billNote")?.value.trim()||"";
+  const subtotal=billingRows.reduce((s,r)=>s+r.amount,0);
+  const tax=Math.round(subtotal*rate/100);
+  const total=subtotal+tax;
+  billingPreviewData={customer:c,month,date,number,rate,payment,note,subtotal,tax,total,rows:billingRows};
+  const rows=billingRows.length?billingRows.map((r,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>${safe(r.date)}</td>
+      <td>${formatTripQuantity(r.qty)}</td>
+      <td>${safe(r.area)}</td>
+      <td class="money">${money(r.amount)}</td>
+      <td>${safe(r.note)}</td>
+    </tr>`).join(""):`<tr><td colspan="6">本月份尚無趟次資料</td></tr>`;
+  document.getElementById("billingPreview").innerHTML=`
+    <div class="billing-head">
+      <h1>晨 安 企 業</h1>
+      <h2>請 款 單</h2>
+    </div>
+    <div class="billing-meta">
+      <div>公司抬頭：${safe(c?.name||"")}</div>
+      <div>統編：${safe(c?.tax_id||"")}</div>
+      <div>日期：${safe(date)}</div>
+    </div>
+    <div class="billing-meta">
+      <div>請款月份：${safe(monthLabel(month))}</div>
+      <div>請款單號：${safe(number)}</div>
+    </div>
+    <table>
+      <thead><tr><th>項次</th><th>日期</th><th>趟數／台數</th><th>運送地區／項目</th><th>運送金額</th><th>備註</th></tr></thead>
+      <tbody>${rows}</tbody>
+      <tr class="billing-total"><td colspan="4">小計</td><td class="money">${money(subtotal)}</td><td></td></tr>
+      <tr class="billing-total"><td colspan="4">${rate}% 營業稅</td><td class="money">${money(tax)}</td><td></td></tr>
+      <tr class="billing-total"><td colspan="4">總計</td><td class="money">${money(total)}</td><td></td></tr>
+    </table>
+    ${payment?`<div class="billing-footer"><strong>付款方式：</strong>${safe(payment)}</div>`:""}
+    ${note?`<div class="billing-footer"><strong>備註：</strong>${safe(note)}</div>`:""}
+  `;
+}
+["billDate","billNumber","billTaxRate","billPayment","billNote"].forEach(id=>{
+  document.addEventListener("input",e=>{if(e.target && e.target.id===id && billingRows.length>=0)renderBillingPreview()});
+});
+
+async function saveBillingInvoice(){
+  if(!billingPreviewData) await loadBillingPreview();
+  const d=billingPreviewData;
+  if(!d?.customer){alert("請先選擇客戶");return}
+  if(!d.month){alert("請先選擇請款月份");return}
+  if(!d.number || d.number==="（未設定）"){alert("請輸入請款單號");return}
+  if(!d.rows.length){alert("目前沒有可請款的趟次資料");return}
+  const snapshot={
+    type:"billing_invoice",
+    month:d.month, rows:d.rows, payment:d.payment, note:d.note,
+    customer_tax_id:d.customer.tax_id||"", rate:d.rate
+  };
+  const {error}=await client.from("quotations").insert({
+    quote_number:d.number,quote_date:d.date,customer_name:d.customer.name,
+    customer_phone:d.customer.phone||"",customer_address:d.customer.address||"",
+    subtotal:d.subtotal,tax:d.tax,total:d.total,status:"已建立請款單",
+    note:JSON.stringify(snapshot)
+  });
+  if(error){alert("請款單儲存失敗："+error.message);return}
+  alert("請款單儲存成功");
   await loadQuotations();
 }
 async function loadQuotations(){
   const {data,error}=await client.from("quotations").select("*").order("quote_date",{ascending:false});
   if(error){console.error(error);return}
-  const list=document.getElementById("quotationList");list.innerHTML="";
+  const list=document.getElementById("quotationList");if(!list)return;
+  list.innerHTML="";
   (data||[]).forEach(item=>{
+    let snap=null; try{snap=JSON.parse(item.note||"")}catch(e){}
+    const month=snap?.type==="billing_invoice"?snap.month:"";
     const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(item.quote_number)}</td><td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td>`;
+    row.innerHTML=`<td>${safe(item.quote_number)}</td><td>${safe(item.quote_date)}</td><td>${safe(item.customer_name)}</td><td>${safe(month)}</td><td>${money(item.subtotal)}</td><td>${money(item.tax)}</td><td>${money(item.total)}</td><td>${safe(item.status)}</td><td><div class="actions"><button class="btn-secondary" onclick="viewSavedBilling('${String(item.id)}')">查看</button><button class="btn-danger" onclick="deleteBillingInvoice('${String(item.id)}')">刪除</button></div></td>`;
     list.appendChild(row);
   });
 }
+async function viewSavedBilling(id){
+  const {data,error}=await client.from("quotations").select("*").eq("id",id).single();
+  if(error){alert("讀取失敗："+error.message);return}
+  let snap=null;try{snap=JSON.parse(data.note||"")}catch(e){}
+  if(snap?.type!=="billing_invoice"){alert("這筆是舊版報價單資料，無法用新的請款單預覽。");return}
+  document.getElementById("billNumber").value=data.quote_number||"";
+  document.getElementById("billDate").value=data.quote_date||today();
+  document.getElementById("billMonth").value=snap.month||currentMonth();
+  const c=customers.find(x=>x.name===data.customer_name);
+  if(c)document.getElementById("billCustomer").value=c.id;
+  document.getElementById("billTaxRate").value=snap.rate??5;
+  document.getElementById("billPayment").value=snap.payment||"";
+  document.getElementById("billNote").value=snap.note||"";
+  billingRows=snap.rows||[];
+  renderBillingPreview();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+async function deleteBillingInvoice(id){
+  if(!confirm("確定要刪除這張請款單嗎？"))return;
+  const {error}=await client.from("quotations").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  await loadQuotations();
+}
+window.downloadBillingPDF=async function(){
+  if(!billingPreviewData) {await loadBillingPreview();}
+  if(!billingPreviewData){return}
+  const name=(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
+  const month=billingPreviewData.month||currentMonth();
+  await exportElementToPDF("billingPreview",`請款單_${name}_${month}.pdf`,"portrait");
+};
+window.downloadBillingExcel=function(){
+  if(!billingPreviewData){alert("請先選擇客戶與月份");return}
+  const d=billingPreviewData;
+  const rows=d.rows.map((r,i)=>({
+    "項次":i+1,"日期":r.date,"趟數／台數":r.qty,"運送地區／項目":r.area,
+    "運送金額":r.amount,"備註":r.note
+  }));
+  rows.push({"項次":"","日期":"","趟數／台數":"","運送地區／項目":"小計","運送金額":d.subtotal,"備註":""});
+  rows.push({"項次":"","日期":"","趟數／台數":"","運送地區／項目":`${d.rate}%營業稅`,"運送金額":d.tax,"備註":""});
+  rows.push({"項次":"","日期":"","趟數／台數":"","運送地區／項目":"總計","運送金額":d.total,"備註":""});
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:8},{wch:14},{wch:14},{wch:30},{wch:16},{wch:28}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"請款明細");
+  const name=(d.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
+  XLSX.writeFile(wb,`請款明細_${name}_${d.month}.xlsx`);
+};
+
 
 async function checkLogin(){
   const {data:{session}}=await client.auth.getSession();

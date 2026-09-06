@@ -56,19 +56,32 @@ th{background:#f5f7f8}
 .sidebar button:hover,.sidebar button.active{background:#455a64}
 .main-content{flex:1;min-width:0}
 .main-topbar{display:flex;justify-content:flex-end;margin-bottom:12px}
-.calendar-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.calendar-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .calendar-toolbar input,.calendar-toolbar select,.calendar-toolbar button{width:auto;margin:0}
-.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.calendar-weekday{background:#eceff1;padding:10px;text-align:center;font-weight:700;border-radius:8px}
-.calendar-day{min-height:125px;background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:7px;overflow:hidden}
+.calendar-view-buttons{display:flex;gap:4px;background:#eef2f5;padding:4px;border-radius:12px}
+.calendar-view-buttons button{background:transparent;color:#455a64;padding:9px 14px;margin:0}
+.calendar-view-buttons button.active{background:#37474f;color:#fff}
+.calendar-legend{display:flex;gap:12px;flex-wrap:wrap;margin:12px 0 4px}
+.driver-dot{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.driver-dot i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.calendar-grid.week-view{grid-template-columns:repeat(7,1fr)}
+.calendar-grid.day-view{grid-template-columns:1fr}
+.calendar-weekday{background:#263238;color:#fff;padding:10px;text-align:center;font-weight:700;border-radius:6px}
+.calendar-day{min-height:145px;background:#fff;border:1px solid #e0e0e0;padding:7px;overflow:hidden}
 .calendar-day.muted{background:#f7f7f7;color:#aaa}
-.calendar-day.today{border:2px solid #37474f}
+.calendar-day.today{outline:3px solid #90caf9;outline-offset:-3px}
 .calendar-date{font-weight:700;margin-bottom:5px}
-.calendar-event{display:block;width:100%;text-align:left;background:#eef3f5;color:#263238;border-left:4px solid #607d8b;padding:6px 7px;margin:4px 0;border-radius:6px;font-size:12px;line-height:1.35;cursor:pointer;overflow:hidden}
-.calendar-event:hover{background:#dfe7ea}
-.calendar-event .time{font-weight:700}
+.calendar-day.week-cell{min-height:420px}
+.calendar-day.day-cell{min-height:520px}
+.calendar-event{display:block;width:100%;text-align:left;color:#263238;border:0;border-left:5px solid #607d8b;padding:7px 8px;margin:5px 0;border-radius:7px;font-size:12px;line-height:1.35;cursor:pointer;overflow:hidden}
+.calendar-event:hover{filter:brightness(.97);transform:translateY(-1px)}
+.calendar-event .time{font-weight:800;font-size:13px}
 .calendar-event .driver{font-weight:700}
+.calendar-event .plate{font-size:11px;opacity:.8}
 .calendar-empty{color:#aaa;font-size:12px;padding-top:5px}
+.calendar-summary{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.calendar-summary .badge{background:#f1f4f6}
 .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:20px}
 .modal-backdrop.show{display:flex}
 .modal{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
@@ -128,7 +141,7 @@ th{background:#f5f7f8}
 </div>
 
 <!-- 收支帳 -->
-<section id="transactions" class="section active">
+<section id="transactions" class="section">
 <div class="card">
 <h2>新增收入／支出</h2>
 <div class="grid">
@@ -175,15 +188,27 @@ th{background:#f5f7f8}
 <section id="calendar" class="section">
 <div class="card">
 <h2>司機日曆</h2>
-<p style="opacity:.7">查看當月每天的司機、時間、客戶與地點／項目。</p>
+<p style="opacity:.7">每位司機固定顏色，可切換全部司機或單一司機，並查看月、週、日行程。</p>
 <div class="calendar-toolbar">
-<input id="calendarMonth" type="month" onchange="renderCalendar()">
+<input id="calendarMonth" type="month" onchange="syncCalendarFromMonth()">
+<input id="calendarDate" type="date" onchange="renderCalendar()">
 <select id="calendarDriver" onchange="renderCalendar()"><option value="">全部司機</option></select>
 <button class="btn-secondary" onclick="goCalendarToday()">今天</button>
+<div class="calendar-view-buttons">
+<button id="viewMonthBtn" class="active" onclick="setCalendarView('month')">月</button>
+<button id="viewWeekBtn" onclick="setCalendarView('week')">週</button>
+<button id="viewDayBtn" onclick="setCalendarView('day')">日</button>
 </div>
+</div>
+<div id="calendarLegend" class="calendar-legend"></div>
 </div>
 <div class="card">
-<div id="calendarTitle" style="font-size:20px;font-weight:700;margin-bottom:12px"></div>
+<div id="calendarTitle" style="font-size:20px;font-weight:700;margin-bottom:4px"></div>
+<div id="calendarSummary" class="calendar-summary"></div>
+<div class="calendar-toolbar" style="margin:10px 0">
+<button class="btn-secondary" onclick="calendarPrev()">‹ 上一個</button>
+<button class="btn-secondary" onclick="calendarNext()">下一個 ›</button>
+</div>
 <div class="calendar-grid" id="calendarGrid"></div>
 </div>
 </section>
@@ -357,6 +382,52 @@ function monthRange(month){
   return {start,next};
 }
 
+let calendarView='month';
+const driverColors=['#dbeafe','#fef3c7','#dcfce7','#f3e8ff','#fee2e2','#ffedd5','#cffafe','#fce7f3','#e0e7ff','#ecfccb','#f5d0fe','#ccfbf1'];
+function driverColor(employeeId){
+  const idx=employees.findIndex(e=>String(e.id)===String(employeeId));
+  return driverColors[(idx<0?0:idx)%driverColors.length];
+}
+function setCalendarView(view){
+  calendarView=view;
+  ['Month','Week','Day'].forEach(v=>{const b=document.getElementById('view'+v+'Btn');if(b)b.classList.toggle('active',view===v.toLowerCase())});
+  renderCalendar();
+}
+function syncCalendarFromMonth(){
+  const month=document.getElementById('calendarMonth').value||currentMonth();
+  const date=month+'-01';
+  document.getElementById('calendarDate').value=date;
+  renderCalendar();
+}
+function calendarPrev(){
+  let d=new Date((document.getElementById('calendarDate').value||today())+'T00:00:00');
+  if(calendarView==='month') d=new Date(d.getFullYear(),d.getMonth()-1,1);
+  else if(calendarView==='week') d.setDate(d.getDate()-7);
+  else d.setDate(d.getDate()-1);
+  setCalendarDate(d);
+}
+function calendarNext(){
+  let d=new Date((document.getElementById('calendarDate').value||today())+'T00:00:00');
+  if(calendarView==='month') d=new Date(d.getFullYear(),d.getMonth()+1,1);
+  else if(calendarView==='week') d.setDate(d.getDate()+7);
+  else d.setDate(d.getDate()+1);
+  setCalendarDate(d);
+}
+function setCalendarDate(d){
+  const iso=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  document.getElementById('calendarDate').value=iso;
+  document.getElementById('calendarMonth').value=iso.slice(0,7);
+  renderCalendar();
+}
+function formatDateTW(iso){
+  const [y,m,d]=iso.split('-').map(Number); return `${y}/${m}/${d}`;
+}
+function dayName(d){return ['日','一','二','三','四','五','六'][d.getDay()]}
+function localISO(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function renderCalendarLegend(){
+  const box=document.getElementById('calendarLegend'); if(!box)return; box.innerHTML='';
+  employees.forEach(e=>{const x=document.createElement('span');x.className='driver-dot';x.innerHTML=`<i style="background:${driverColor(e.id)}"></i>${safe(e.name)}${e.license_plate?'｜'+safe(e.license_plate):''}`;box.appendChild(x)});
+}
 window.login=async function(){
   const email=document.getElementById("loginEmail").value.trim();
   const password=document.getElementById("loginPassword").value;
@@ -378,6 +449,7 @@ async function showApp(){
   document.getElementById("tripDate").value=today();
   document.getElementById("tripTime").value="08:00";
   document.getElementById("calendarMonth").value=currentMonth();
+  document.getElementById("calendarDate").value=today();
   document.getElementById("tripMonth").value=currentMonth();
   document.getElementById("qDate").value=today();
   await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
@@ -386,6 +458,7 @@ async function showApp(){
   await loadTrips();
   setupReportsSection();
   renderCalendarDriverFilter();
+  renderCalendarLegend();
   renderCalendar();
 }
 window.showTab=function(tabName,button){
@@ -394,7 +467,7 @@ window.showTab=function(tabName,button){
   const section=document.getElementById(tabName);
   if(section)section.classList.add("active");
   if(button)button.classList.add("active");
-  if(tabName==="calendar"){renderCalendarDriverFilter();renderCalendar()}
+  if(tabName==="calendar"){renderCalendarDriverFilter();renderCalendarLegend();renderCalendar()}
 };
 
 async function addTransaction(){
@@ -442,6 +515,8 @@ async function addEmployee(){
   document.getElementById("ePlate").value="";
   document.getElementById("eNote").value="";
   await loadEmployees();
+  renderCalendarDriverFilter();
+  renderCalendarLegend();
 }
 async function loadEmployees(){
   const {data,error}=await client.from("employees").select("*").order("created_at",{ascending:false});
@@ -816,49 +891,62 @@ function setupReportsSection(){
   if(driverCard && driverCard.parentElement!==container)container.appendChild(driverCard);
 }
 function renderCalendarDriverFilter(){
-  const select=document.getElementById("calendarDriver");
-  if(!select)return;
-  const old=select.value;
-  select.innerHTML='<option value="">全部司機</option>';
-  employees.forEach(e=>{
-    const o=document.createElement("option");o.value=e.id;o.textContent=e.license_plate?`${e.name}｜${e.license_plate}`:e.name;select.appendChild(o);
-  });
+  const select=document.getElementById('calendarDriver'); if(!select)return;
+  const old=select.value; select.innerHTML='<option value="">全部司機</option>';
+  employees.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=e.license_plate?`${e.name}｜${e.license_plate}`:e.name;select.appendChild(o)});
   if([...select.options].some(o=>String(o.value)===String(old)))select.value=old;
+  renderCalendarLegend();
 }
 function goCalendarToday(){
-  document.getElementById("calendarMonth").value=currentMonth();
+  document.getElementById('calendarMonth').value=currentMonth();
+  document.getElementById('calendarDate').value=today();
   renderCalendar();
 }
+function calendarTripsForDate(date,driverId){
+  return (window._tripCache||[]).filter(t=>t.trip_date===date && (!driverId||String(t.employee_id)===String(driverId))).sort((a,b)=>(a.trip_time||'99:99').localeCompare(b.trip_time||'99:99'));
+}
+function eventButton(t){
+  const ev=document.createElement('button'); ev.className='calendar-event'; ev.style.background=driverColor(t.employee_id); ev.style.borderLeftColor=driverColor(t.employee_id);
+  const time=t.trip_time||'未排時間',driver=t.employees?.name||'',customer=t.customers?.name||'',place=t.description||t.customer_items?.name||'',plate=employees.find(e=>String(e.id)===String(t.employee_id))?.license_plate||'';
+  ev.innerHTML=`<div class="time">${safe(time)}</div><div class="driver">${safe(driver)}</div>${plate?`<div class="plate">🚚 ${safe(plate)}</div>`:''}<div>${safe(customer)}</div><div>${safe(place)}</div>`;
+  ev.onclick=()=>showCalendarDetail(t); return ev;
+}
+function addDayCell(grid,date,opts={}){
+  const cell=document.createElement('div'); cell.className='calendar-day'+(opts.cellClass?' '+opts.cellClass:'')+(date===today()?' today':'');
+  const title=document.createElement('div'); title.className='calendar-date'; title.textContent=`${date.slice(5).replace('-','/')}（${dayName(new Date(date+'T00:00:00'))}）`; cell.appendChild(title);
+  const driverId=document.getElementById('calendarDriver')?.value||''; const trips=calendarTripsForDate(date,driverId);
+  if(!trips.length){const e=document.createElement('div');e.className='calendar-empty';e.textContent='無趟次';cell.appendChild(e)}
+  trips.forEach(t=>cell.appendChild(eventButton(t)));
+  grid.appendChild(cell); return trips.length;
+}
 function renderCalendar(){
-  const grid=document.getElementById("calendarGrid");
-  const month=document.getElementById("calendarMonth")?.value||currentMonth();
-  if(!grid)return;
-  grid.innerHTML="";
-  const driverId=document.getElementById("calendarDriver")?.value||"";
-  const [y,m]=month.split("-").map(Number);
-  const first=new Date(y,m-1,1);
-  const days=new Date(y,m,0).getDate();
-  const startDay=first.getDay();
-  const names=["日","一","二","三","四","五","六"];
-  names.forEach(n=>{const d=document.createElement("div");d.className="calendar-weekday";d.textContent="週"+n;grid.appendChild(d)});
-  for(let i=0;i<startDay;i++){const d=document.createElement("div");d.className="calendar-day muted";grid.appendChild(d)}
-  const trips=(window._tripCache||[]).filter(t=>t.trip_date?.slice(0,7)===month && (!driverId||String(t.employee_id)===String(driverId)));
-  for(let day=1;day<=days;day++){
-    const date=`${y}-${String(m).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-    const cell=document.createElement("div");cell.className="calendar-day"+(date===today()?" today":"");
-    const title=document.createElement("div");title.className="calendar-date";title.textContent=day+"日";cell.appendChild(title);
-    const dayTrips=trips.filter(t=>t.trip_date===date).sort((a,b)=>(a.trip_time||"99:99").localeCompare(b.trip_time||"99:99"));
-    if(!dayTrips.length){const e=document.createElement("div");e.className="calendar-empty";e.textContent="無趟次";cell.appendChild(e)}
-    dayTrips.forEach(t=>{
-      const ev=document.createElement("button");ev.className="calendar-event";
-      const time=t.trip_time||"未排時間", driver=t.employees?.name||"", customer=t.customers?.name||"", place=t.description||t.customer_items?.name||"";
-      ev.innerHTML=`<div class="time">${safe(time)}</div><div class="driver">${safe(driver)}</div><div>${safe(customer)}</div><div>${safe(place)}</div>`;
-      ev.onclick=()=>showCalendarDetail(t);cell.appendChild(ev);
-    });
-    grid.appendChild(cell);
+  const grid=document.getElementById('calendarGrid'); if(!grid)return; grid.innerHTML='';
+  const driverId=document.getElementById('calendarDriver')?.value||'';
+  const dateStr=document.getElementById('calendarDate')?.value||today();
+  const base=new Date(dateStr+'T00:00:00'); const names=['日','一','二','三','四','五','六'];
+  let allTrips=[];
+  if(calendarView==='month'){
+    const y=base.getFullYear(),m=base.getMonth(); document.getElementById('calendarMonth').value=`${y}-${String(m+1).padStart(2,'0')}`;
+    names.forEach(n=>{const d=document.createElement('div');d.className='calendar-weekday';d.textContent='週'+n;grid.appendChild(d)});
+    grid.classList.remove('week-view','day-view');
+    const first=new Date(y,m,1),start=first.getDay(),days=new Date(y,m+1,0).getDate();
+    for(let i=0;i<start;i++){const d=document.createElement('div');d.className='calendar-day muted';grid.appendChild(d)}
+    for(let day=1;day<=days;day++){const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;allTrips.push(...calendarTripsForDate(iso,driverId));addDayCell(grid,iso)}
+    document.getElementById('calendarTitle').textContent=`${y} 年 ${m+1} 月｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||''):'全部司機'}`;
+  }else if(calendarView==='week'){
+    grid.classList.add('week-view');grid.classList.remove('day-view');
+    const sun=new Date(base);sun.setDate(base.getDate()-base.getDay());
+    names.forEach((n,i)=>{const d=new Date(sun);d.setDate(sun.getDate()+i);const iso=localISO(d);const h=document.createElement('div');h.className='calendar-weekday';h.textContent=`${n} ${d.getMonth()+1}/${d.getDate()}`;grid.appendChild(h);allTrips.push(...calendarTripsForDate(iso,driverId))});
+    for(let i=0;i<7;i++){const d=new Date(sun);d.setDate(sun.getDate()+i);addDayCell(grid,localISO(d),{cellClass:'week-cell'})}
+    document.getElementById('calendarTitle').textContent=`${localISO(sun)} ～ ${localISO(new Date(sun.getFullYear(),sun.getMonth(),sun.getDate()+6))}｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||''):'全部司機'}`;
+  }else{
+    grid.classList.remove('week-view');grid.classList.add('day-view');
+    const h=document.createElement('div');h.className='calendar-weekday';h.textContent=`${dateStr}（週${dayName(base)}）`;grid.appendChild(h);allTrips=calendarTripsForDate(dateStr,driverId);addDayCell(grid,dateStr,{cellClass:'day-cell'});
+    document.getElementById('calendarTitle').textContent=`${dateStr}｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||''):'全部司機'}`;
   }
-  const title=document.getElementById("calendarTitle");
-  if(title)title.textContent=`${y} 年 ${m} 月｜${driverId?(employees.find(e=>String(e.id)===String(driverId))?.name||""):"全部司機"}`;
+  const summary=document.getElementById('calendarSummary');
+  const customerCount=new Set(allTrips.map(t=>t.customer_id)).size;
+  summary.innerHTML=`<span class="badge">共 ${allTrips.length} 筆行程</span><span class="badge">${new Set(allTrips.map(t=>t.employee_id)).size} 位司機</span><span class="badge">${customerCount} 位客戶</span>`;
 }
 function showCalendarDetail(t){
   const body=document.getElementById("calendarDetailBody");

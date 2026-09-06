@@ -105,6 +105,7 @@ th{background:#f5f7f8}
 .modal{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
 .modal h2{margin-top:0}
 .modal-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #eee;padding:9px 0}.modal-row span:first-child{font-weight:700}
+.password-modal{max-width:500px}.password-modal .notice{background:#f3f7fb;border-radius:10px;padding:12px 14px;color:#455a64;font-size:14px;line-height:1.6;margin-bottom:14px}.password-modal .form-field{margin-bottom:10px}
 @media(max-width:900px){.app-layout{display:block}.sidebar{width:100%;position:static;margin-bottom:14px}.sidebar button{width:48%;display:inline-block}.calendar-day{min-height:105px}}
 @media(max-width:600px){.sidebar button{width:100%}.calendar-grid{gap:3px}.calendar-day{min-height:90px;padding:4px}.calendar-event{font-size:11px;padding:4px}.calendar-weekday{font-size:12px;padding:7px}}
 
@@ -169,7 +170,7 @@ th{background:#f5f7f8}
 <div class="user-bar">
 <span id="currentUserEmail" class="user-email"></span>
 <span id="currentUserRole" class="user-role">登入中</span>
-<button class="btn-secondary logout-top" onclick="registerFaceID()">設定 Face ID</button>
+<button class="btn-secondary logout-top" onclick="changePassword()">修改密碼</button><button class="btn-secondary logout-top" onclick="registerFaceID()">設定 Face ID</button>
 <button class="btn-secondary logout-top" onclick="logout()">登出</button>
 </div>
 <section id="home" class="section active">
@@ -413,6 +414,15 @@ th{background:#f5f7f8}
 </div>
 </div>
 
+<div id="passwordChangeModal" class="modal-backdrop" style="display:none;z-index:3000"><div class="modal password-modal" onclick="event.stopPropagation()">
+<h2>🔐 首次登入，請設定新密碼</h2>
+<div class="notice">為了帳號安全，這次登入使用的是臨時密碼。請先設定只有你知道的新密碼，完成後才能使用系統。</div>
+<div class="form-field"><label for="newPassword">新密碼</label><input id="newPassword" type="password" autocomplete="new-password" placeholder="請輸入新的密碼（至少 8 碼）"></div>
+<div class="form-field"><label for="confirmPassword">確認新密碼</label><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="請再輸入一次新密碼" onkeydown="if(event.key==='Enter') changeFirstPassword()"></div>
+<div id="passwordChangeMessage" class="message"></div>
+<button id="passwordChangeBtn" class="btn-green" onclick="changeFirstPassword()">儲存新密碼</button>
+</div></div>
+
 <div id="quickItemModal" class="modal-backdrop" onclick="closeQuickItemModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶項目</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的項目下拉選單。</p><div class="form-field"><label for="quickItemName">項目名稱</label><input id="quickItemName" placeholder="例如：拍貼機、撼動、盆栽、五金"></div><div class="form-field"><label for="quickItemCustomerPrice">客戶收費</label><input id="quickItemCustomerPrice" type="number" min="0" step="1" placeholder="請輸入客戶收費"></div><div class="form-field"><label for="quickItemDriverFee">司機費</label><input id="quickItemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickItemModal()">取消</button><button onclick="saveQuickTripItem()">新增項目</button></div></div></div>
 
 <div id="calendarDetailModal" class="modal-backdrop" onclick="closeCalendarDetail(event)"><div class="modal" onclick="event.stopPropagation()"><h2>趟次詳細資料</h2><div id="calendarDetailBody"></div><button class="btn-secondary" onclick="closeCalendarDetail()">關閉</button></div></div>
@@ -442,6 +452,7 @@ let editingBillingInvoiceId = null;
 let currentUser = null;
 let currentUserRole = null;
 let currentUserDisplayName = "";
+let currentUserMustChangePassword = false;
 
 function money(value){
   return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value)||0);
@@ -544,7 +555,7 @@ async function loadCurrentUserProfile(){
 
   const {data:profile,error:profileError}=await client
     .from("app_users")
-    .select("role,display_name")
+    .select("role,display_name,must_change_password")
     .eq("user_id",user.id)
     .maybeSingle();
 
@@ -560,6 +571,7 @@ async function loadCurrentUserProfile(){
   currentUser=user;
   currentUserRole=profile.role;
   currentUserDisplayName=profile.display_name||"";
+  currentUserMustChangePassword=!!profile.must_change_password && currentUserRole!=="admin";
   return {ok:true,profile};
 }
 
@@ -627,6 +639,12 @@ window.registerFaceID=async function(){
     return;
   }
 
+  if(currentUserMustChangePassword){
+    alert("請先完成首次登入的新密碼設定，再設定 Face ID。");
+    openPasswordChangeModal();
+    return;
+  }
+
   if(!canUsePasskey()){
     alert("此裝置或瀏覽器目前不支援 Passkey／Face ID。");
     return;
@@ -644,6 +662,89 @@ window.registerFaceID=async function(){
     alert("Face ID 設定未完成："+(err?.message||"請再試一次"));
   }
 };
+
+function openPasswordChangeModal(){
+  const modal=document.getElementById("passwordChangeModal");
+  if(!modal)return;
+  modal.style.display="flex";
+  document.querySelector("#passwordChangeModal h2").textContent="🔐 首次登入，請設定新密碼";
+  document.querySelector("#passwordChangeModal .notice").textContent="為了帳號安全，這次登入使用的是臨時密碼。請先設定只有你知道的新密碼，完成後才能使用系統。";
+  document.getElementById("passwordChangeMessage").textContent="";
+  setTimeout(()=>document.getElementById("newPassword")?.focus(),50);
+}
+
+function closePasswordChangeModal(){
+  if(currentUserMustChangePassword)return;
+  const modal=document.getElementById("passwordChangeModal");
+  if(modal)modal.style.display="none";
+}
+
+window.changeFirstPassword=async function(){
+  if(!currentUser)return;
+  const p1=document.getElementById("newPassword").value;
+  const p2=document.getElementById("confirmPassword").value;
+  const msg=document.getElementById("passwordChangeMessage");
+  const btn=document.getElementById("passwordChangeBtn");
+
+  if(p1.length<8){
+    msg.textContent="新密碼至少需要 8 碼。";
+    msg.className="message error";
+    return;
+  }
+  if(p1!==p2){
+    msg.textContent="兩次輸入的密碼不一致。";
+    msg.className="message error";
+    return;
+  }
+
+  btn.disabled=true;
+  btn.textContent="儲存中…";
+  msg.textContent="";
+
+  const {error}=await client.auth.updateUser({password:p1});
+  if(error){
+    msg.textContent="修改密碼失敗：「"+error.message+"」。";
+    msg.className="message error";
+    btn.disabled=false;
+    btn.textContent="儲存新密碼";
+    return;
+  }
+
+  const {error:flagError}=await client.rpc("complete_password_setup");
+  if(flagError){
+    msg.textContent="密碼已修改，但首次登入狀態尚未完成，請再按一次儲存。";
+    msg.className="message error";
+    btn.disabled=false;
+    btn.textContent="再試一次";
+    return;
+  }
+
+  currentUserMustChangePassword=false;
+  document.getElementById("passwordChangeModal").style.display="none";
+  document.getElementById("newPassword").value="";
+  document.getElementById("confirmPassword").value="";
+  btn.disabled=false;
+  btn.textContent="儲存新密碼";
+  alert("新密碼設定完成！\n下次登入請使用你剛設定的新密碼。\n現在也可以設定 Face ID。");
+};
+
+window.changePassword=async function(){
+  if(currentUserMustChangePassword){
+    openPasswordChangeModal();
+    return;
+  }
+  openPasswordModalForNormalChange();
+};
+
+function openPasswordModalForNormalChange(){
+  const modal=document.getElementById("passwordChangeModal");
+  if(!modal)return;
+  modal.style.display="flex";
+  document.querySelector("#passwordChangeModal h2").textContent="🔐 修改密碼";
+  document.querySelector("#passwordChangeModal .notice").textContent="請輸入新的密碼。修改完成後，下次登入請使用新密碼。";
+  document.getElementById("passwordChangeMessage").textContent="";
+  setTimeout(()=>document.getElementById("newPassword")?.focus(),50);
+}
 
 window.login=async function(){
   const email=document.getElementById("loginEmail").value.trim();
@@ -682,11 +783,13 @@ window.logout=async function(){
   currentUser=null;
   currentUserRole=null;
   currentUserDisplayName="";
+  currentUserMustChangePassword=false;
 
   document.getElementById("app").style.display="none";
   document.getElementById("loginScreen").style.display="block";
   document.getElementById("loginPassword").value="";
   document.getElementById("loginMessage").textContent="";
+  document.getElementById("passwordChangeModal").style.display="none";
   document.getElementById("loginEmail").focus();
 };
 
@@ -712,6 +815,10 @@ async function showApp(){
   renderCalendarDriverFilter();
   renderCalendarLegend();
   renderCalendar();
+
+  if(currentUserMustChangePassword){
+    openPasswordChangeModal();
+  }
 }
 
 window.showTab=function(tabName,button){

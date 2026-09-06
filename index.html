@@ -47,7 +47,17 @@ th{background:#f5f7f8}
 .price-preview{background:#f5f7f8;border-radius:10px;padding:12px;margin-top:6px}
 .total-line{display:flex;justify-content:space-between;gap:10px;padding:8px 0;font-weight:600}
 .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eceff1;font-size:12px}
-#loginScreen{max-width:430px;margin:60px auto}
+#loginScreen{max-width:430px;margin:70px auto}
+#loginScreen .card{padding:30px}
+.login-brand{text-align:center;margin-bottom:22px}
+.login-brand .logo-mark{width:56px;height:56px;border-radius:16px;margin:0 auto 12px;background:#263238;color:#fff;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.login-brand h1{margin:0;font-size:27px;color:#263238}
+.login-brand p{margin:6px 0 0;color:#78909c;font-size:14px}
+#loginScreen button{margin-top:8px}
+.user-bar{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.user-role{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;background:#f1f5f9;color:#334155;font-size:13px;font-weight:700}
+.user-email{color:#64748b;font-size:13px}
+.logout-top{width:auto!important;margin:0!important;padding:7px 12px!important;font-size:13px!important}
 #app{display:none}
 @media(max-width:800px){.summary,.grid-3{grid-template-columns:repeat(2,1fr)}.tabs{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:600px){.grid,.summary,.grid-3{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}}
@@ -125,10 +135,14 @@ th{background:#f5f7f8}
 <body>
 <div id="loginScreen" class="container">
 <div class="card">
-<h2>管理員登入</h2>
-<div class="form-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" placeholder="請輸入 Email"></div>
-<div class="form-field"><label for="loginPassword">密碼</label><input id="loginPassword" type="password" placeholder="請輸入密碼"></div>
-<button onclick="login()">登入</button>
+<div class="login-brand">
+<div class="logo-mark">晨</div>
+<h1>晨安企業</h1>
+<p>內帳・司機趟次・客戶・請款管理系統</p>
+</div>
+<div class="form-field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" placeholder="請輸入 Email" autocomplete="username"></div>
+<div class="form-field"><label for="loginPassword">密碼</label><input id="loginPassword" type="password" placeholder="請輸入密碼" autocomplete="current-password" onkeydown="if(event.key==='Enter') login()"></div>
+<button onclick="login()">登入系統</button>
 <div id="loginMessage" class="message"></div>
 </div>
 </div>
@@ -148,7 +162,16 @@ th{background:#f5f7f8}
 <button onclick="logout()"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/></svg></span><span>登出</span></button>
 </aside>
 <main class="main-content">
+<div class="user-bar">
+<span id="currentUserEmail" class="user-email"></span>
+<span id="currentUserRole" class="user-role">登入中</span>
+<button class="btn-secondary logout-top" onclick="logout()">登出</button>
+</div>
 <section id="home" class="section active">
+<div class="card" style="margin-bottom:14px">
+<h2 style="margin-bottom:4px">歡迎回來，<span id="homeUserName">管理者</span></h2>
+<div style="color:#78909c;font-size:14px">目前登入身分：<strong id="homeRoleText">管理者</strong></div>
+</div>
 <div class="summary">
 <div class="summary-box">本月總趟次<strong id="dashTrips">0</strong><small>趟</small></div>
 <div class="summary-box">本月客戶收入<strong id="dashIncome">$0</strong></div>
@@ -404,6 +427,10 @@ let editingTransactionId = null;
 let editingCustomerId = null;
 let editingBillingInvoiceId = null;
 
+let currentUser = null;
+let currentUserRole = null;
+let currentUserDisplayName = "";
+
 function money(value){
   return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value)||0);
 }
@@ -497,21 +524,97 @@ function renderCalendarLegend(){
   const box=document.getElementById('calendarLegend'); if(!box)return; box.innerHTML='';
   employees.forEach(e=>{const x=document.createElement('span');x.className='driver-dot';x.innerHTML=`<i style="background:${driverColor(e.id)}"></i>${safe(e.name)}${e.license_plate?'｜'+safe(e.license_plate):''}`;box.appendChild(x)});
 }
+async function loadCurrentUserProfile(){
+  const {data:{user},error:userError}=await client.auth.getUser();
+  if(userError || !user){
+    return {ok:false,message:"登入狀態已失效，請重新登入。"};
+  }
+
+  const {data:profile,error:profileError}=await client
+    .from("app_users")
+    .select("role,display_name")
+    .eq("user_id",user.id)
+    .maybeSingle();
+
+  if(profileError){
+    return {ok:false,message:"讀取使用者權限失敗："+profileError.message};
+  }
+
+  if(!profile || !["admin","info_manager"].includes(profile.role)){
+    await client.auth.signOut();
+    return {ok:false,message:"此帳號尚未設定網站權限，請聯絡管理者。"};
+  }
+
+  currentUser=user;
+  currentUserRole=profile.role;
+  currentUserDisplayName=profile.display_name||"";
+  return {ok:true,profile};
+}
+
+function renderCurrentUserBar(){
+  const emailEl=document.getElementById("currentUserEmail");
+  const roleEl=document.getElementById("currentUserRole");
+  if(!emailEl||!roleEl)return;
+
+  emailEl.textContent=currentUser?.email||"";
+  roleEl.textContent=currentUserRole==="admin"
+    ? `👑 管理者${currentUserDisplayName?`｜${currentUserDisplayName}`:""}`
+    : `👤 使用者${currentUserDisplayName?`｜${currentUserDisplayName}`:""}`;
+
+  const homeName=document.getElementById("homeUserName");
+  const homeRole=document.getElementById("homeRoleText");
+  if(homeName)homeName.textContent=currentUserDisplayName||"使用者";
+  if(homeRole)homeRole.textContent=currentUserRole==="admin"?"管理者":"使用者";
+}
+
 window.login=async function(){
   const email=document.getElementById("loginEmail").value.trim();
   const password=document.getElementById("loginPassword").value;
-  if(!email||!password){alert("請輸入 Email 和密碼");return}
+  const msg=document.getElementById("loginMessage");
+
+  if(!email||!password){
+    msg.textContent="請輸入 Email 和密碼";
+    msg.className="message error";
+    return;
+  }
+
+  msg.textContent="登入中…";
+  msg.className="message";
+
   const {error}=await client.auth.signInWithPassword({email,password});
-  if(error){alert("登入失敗："+error.message);return}
+  if(error){
+    msg.textContent="登入失敗："+error.message;
+    msg.className="message error";
+    return;
+  }
+
+  const result=await loadCurrentUserProfile();
+  if(!result.ok){
+    msg.textContent=result.message;
+    msg.className="message error";
+    return;
+  }
+
+  msg.textContent="";
   await showApp();
 };
+
 window.logout=async function(){
   await client.auth.signOut();
+  currentUser=null;
+  currentUserRole=null;
+  currentUserDisplayName="";
+
   document.getElementById("app").style.display="none";
   document.getElementById("loginScreen").style.display="block";
   document.getElementById("loginPassword").value="";
+  document.getElementById("loginMessage").textContent="";
+  document.getElementById("loginEmail").focus();
 };
+
 async function showApp(){
+  renderCurrentUserBar();
+
   document.getElementById("loginScreen").style.display="none";
   document.getElementById("app").style.display="block";
   document.getElementById("tDate").value=today();
@@ -532,6 +635,7 @@ async function showApp(){
   renderCalendarLegend();
   renderCalendar();
 }
+
 window.showTab=function(tabName,button){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".sidebar button").forEach(b=>b.classList.remove("active"));
@@ -1455,8 +1559,24 @@ window.downloadBillingExcel=function(){
 
 async function checkLogin(){
   const {data:{session}}=await client.auth.getSession();
-  if(session)await showApp();
+  if(!session)return;
+
+  const result=await loadCurrentUserProfile();
+  if(result.ok){
+    await showApp();
+  }else{
+    document.getElementById("loginMessage").textContent=result.message;
+    document.getElementById("loginMessage").className="message error";
+  }
 }
+
+client.auth.onAuthStateChange(async (event,session)=>{
+  if(event==="SIGNED_OUT"){
+    document.getElementById("app").style.display="none";
+    document.getElementById("loginScreen").style.display="block";
+  }
+});
+
 checkLogin();
 </script>
 </body>

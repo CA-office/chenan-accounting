@@ -1193,8 +1193,9 @@ function eventButton(t){
   else if(rawDestination.includes('－')) destination=rawDestination.split('－').pop().trim();
   else if(rawDestination.includes('-')) destination=rawDestination.split('-').pop().trim();
   const calendarText=destination ? `${itemName}｜${destination}` : itemName;
-  ev.innerHTML=`<div class="driver">${safe(calendarText)}</div>`;
-  ev.title=calendarText;
+  const timeText=String(t.trip_time||'').slice(0,5);
+  ev.innerHTML=`${timeText?`<div class="time">${safe(timeText)}</div>`:''}<div class="driver">${safe(calendarText)}</div>`;
+  ev.title=timeText ? `${timeText}｜${calendarText}` : calendarText;
   ev.onclick=()=>showCalendarDetail(t); return ev;
 }
 function addDayCell(grid,date,opts={}){

@@ -274,7 +274,7 @@ th{background:#f5f7f8}
 <div class="grid trip-form-grid">
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
-<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="time" step="60" placeholder="08:00"></div>
+<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">客戶項目</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增項目</button></div></div>
 <div class="form-field"><label for="tripQuantity">趟數</label><input id="tripQuantity" type="number" min="1" step="1" value="1"></div>
@@ -331,7 +331,7 @@ th{background:#f5f7f8}
 <h2>新增客戶項目</h2>
 <div class="form-field"><label for="itemCustomer">客戶</label><select id="itemCustomer"><option value="">請選擇客戶</option></select></div>
 <div class="grid">
-<div class="form-field"><label for="itemName">項目名稱</label><input id="itemName" placeholder="例如：拍貼機、盆栽、五金"></div>
+<div class="form-field"><label for="itemName">項目名稱</label><input id="itemName" placeholder="例如：拍貼機、撼動、五金"></div>
 <div class="form-field"><label for="itemCustomerPrice">客戶收費</label><input id="itemCustomerPrice" type="number" min="0" step="1" placeholder="請輸入客戶收費"></div>
 <div class="form-field"><label for="itemDriverFee">司機費</label><input id="itemDriverFee" type="number" min="0" step="1" placeholder="請輸入司機費"></div>
 <div class="form-field"><label for="itemNote">備註</label><input id="itemNote" placeholder="請輸入備註"></div>
@@ -1195,6 +1195,26 @@ window.previewTripPrice=function(){
 };
 document.getElementById("tripQuantity").addEventListener("input",previewTripPrice);
 
+const tripTimeInput=document.getElementById("tripTime");
+if(tripTimeInput){
+  tripTimeInput.addEventListener("input",()=>{
+    let v=tripTimeInput.value.replace(/\\D/g,"").slice(0,4);
+    if(v.length>=3) v=v.slice(0,2)+":"+v.slice(2);
+    tripTimeInput.value=v;
+  });
+  tripTimeInput.addEventListener("blur",()=>{
+    const v=tripTimeInput.value.trim();
+    if(!v)return;
+    const m=v.match(/^(\\d{1,2}):(\\d{2})$/);
+    if(m){
+      const hh=Number(m[1]), mm=Number(m[2]);
+      if(hh<=23 && mm<=59){
+        tripTimeInput.value=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+      }
+    }
+  });
+}
+
 // 日期可直接輸入，格式：YYYY/MM/DD
 document.getElementById("tripDate").addEventListener("input",function(){
   let v=this.value.replace(/\D/g,"").slice(0,8);
@@ -1212,7 +1232,20 @@ document.getElementById("tripDate").addEventListener("blur",function(){
 window.saveTrip=async function(){
   const employee_id=document.getElementById("tripDriver").value;
   const trip_date=normalizeDate(document.getElementById("tripDate").value);
-  const trip_time=document.getElementById("tripTime").value||null;
+  let trip_time=document.getElementById("tripTime").value.trim()||null;
+  if(trip_time){
+    const m=trip_time.match(/^(\\d{1,2}):(\\d{2})$/);
+    if(!m){
+      alert("時間請輸入 24 小時制，例如 08:00 或 18:30");
+      return;
+    }
+    const hh=Number(m[1]), mm=Number(m[2]);
+    if(hh<0||hh>23||mm<0||mm>59){
+      alert("時間格式不正確，請輸入 00:00～23:59");
+      return;
+    }
+    trip_time=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+  }
   const customer_id=document.getElementById("tripCustomer").value;
   const customer_item_id=document.getElementById("tripItem").value||null;
   const quantity=Number(document.getElementById("tripQuantity").value||0);

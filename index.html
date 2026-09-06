@@ -216,27 +216,6 @@ th{background:#f5f7f8}
 </div>
 </section>
 
-<!-- 司機 -->
-<section id="drivers" class="section">
-<div class="card">
-<h2 id="employeeFormTitle">新增司機</h2>
-<div class="grid">
-<div class="form-field"><label for="eName">司機姓名</label><input id="eName" placeholder="請輸入司機姓名"></div>
-<div class="form-field"><label for="ePhone">電話</label><input id="ePhone" placeholder="請輸入電話"></div>
-<div class="form-field"><label for="ePlate">車牌</label><input id="ePlate" placeholder="例如 ABC-1234"></div>
-</div>
-<div class="form-field"><label for="eNote">備註</label><textarea id="eNote" placeholder="請輸入備註"></textarea></div>
-<button id="employeeSaveBtn" onclick="addEmployee()">儲存司機</button><button id="employeeCancelBtn" class="btn-secondary" style="display:none" onclick="cancelEmployeeEdit()">取消修改</button>
-</div>
-<div class="card">
-<h2>司機資料</h2>
-<div class="table-wrap"><table><thead><tr>
-<th>姓名</th><th>電話</th><th>車牌</th><th>備註</th><th>操作</th>
-</tr></thead><tbody id="employeeList"></tbody></table></div>
-</div>
-</section>
-
-
 <!-- 行事曆 -->
 <section id="calendar" class="section">
 <div class="card">
@@ -338,7 +317,7 @@ th{background:#f5f7f8}
 </div>
 </section>
 
-<!-- 客戶 -->
+<!-- 客戶／司機 -->
 <section id="customers" class="section">
 <div class="card">
 <h2 id="customerFormTitle">新增客戶</h2>
@@ -360,12 +339,34 @@ th{background:#f5f7f8}
 </div>
 
 <div class="card">
-<h2>客戶與項目</h2>
+<h2>客戶資料</h2>
 <div class="table-wrap"><table><thead><tr>
-<th>客戶</th><th>項目</th><th>狀態</th><th>操作</th>
-</tr></thead><tbody id="customerItemList"></tbody></table></div>
+<th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th><th>操作</th>
+</tr></thead><tbody id="customerList"></tbody></table></div>
 </div>
 
+<div class="card" id="driverManagementCard">
+<h2 id="employeeFormTitle">新增司機</h2>
+<div class="grid">
+<div class="form-field"><label for="eName">司機姓名</label><input id="eName" placeholder="請輸入司機姓名"></div>
+<div class="form-field"><label for="ePhone">電話</label><input id="ePhone" placeholder="請輸入電話"></div>
+<div class="form-field"><label for="ePlate">車牌</label><input id="ePlate" placeholder="例如 ABC-1234"></div>
+</div>
+<div class="form-field"><label for="eNote">備註</label><textarea id="eNote" placeholder="請輸入備註"></textarea></div>
+<button id="employeeSaveBtn" onclick="addEmployee()">儲存司機</button>
+<button id="employeeCancelBtn" class="btn-secondary" style="display:none" onclick="cancelEmployeeEdit()">取消修改</button>
+</div>
+
+<div class="card">
+<h2>司機資料</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>姓名</th><th>電話</th><th>車牌</th><th>備註</th><th>操作</th>
+</tr></thead><tbody id="employeeList"></tbody></table></div>
+</div>
+</section>
+
+<section id="reports" class="section">
+<div id="reportsContainer">
 <div class="card" id="customerQuoteReportCard">
 <h2>客戶項目成本報表</h2>
 <div class="form-field"><label for="reportCustomer">客戶</label><select id="reportCustomer" onchange="loadCustomerQuoteReport()"><option value="">全部客戶</option></select></div>
@@ -377,10 +378,7 @@ th{background:#f5f7f8}
 <button type="button" class="btn-secondary" onclick="exportCustomerQuotePDF()">下載 PDF</button>
 </div>
 </div>
-</section>
-
-<section id="reports" class="section">
-<div id="reportsContainer"></div>
+</div>
 </section>
 
 <!-- 請款單 -->
@@ -935,7 +933,7 @@ window.editEmployee=function(id){
   document.getElementById("ePhone").value=employee.phone||"";
   document.getElementById("ePlate").value=employee.license_plate||"";
   document.getElementById("eNote").value=employee.note||"";
-  document.getElementById("drivers").scrollIntoView({behavior:"smooth"});
+  document.getElementById("customers")?.scrollIntoView({behavior:"smooth"});
 };
 window.cancelEmployeeEdit=function(){
   editingEmployeeId=null;
@@ -1116,14 +1114,7 @@ async function loadCustomerItems(){
   const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
   if(error){console.error(error);return}
   customerItems=data||[];
-  const list=document.getElementById("customerItemList"); if(!list)return;
-  list.innerHTML="";
-  customerItems.forEach(item=>{
-    const customerName=item.customers?item.customers.name:"";
-    const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name)}</td><td>${item.active?'<span class="badge">啟用</span>':'<span class="badge">停用</span>'}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
-    list.appendChild(row);
-  });
+  // 客戶項目不再獨立顯示列表，但仍保留資料快取，供新增趟次、請款單等功能使用。
 }
 window.editCustomerItem=function(id){
   const item=customerItems.find(i=>String(i.id)===String(id));
@@ -1166,7 +1157,6 @@ window.openQuickItemModal=function(){
   const customerId=document.getElementById("tripCustomer")?.value||"";
   if(!customerId){alert("請先選擇客戶，再新增這個客戶的項目。");return}
   document.getElementById("quickItemName").value="";
-  document.getElementById("quickItemDriverFee").value="";
   document.getElementById("quickItemModal").style.display="flex";
   setTimeout(()=>document.getElementById("quickItemName")?.focus(),50);
 };

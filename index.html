@@ -108,7 +108,45 @@ th{background:#f5f7f8}
 .modal-row{display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #eee;padding:9px 0}.modal-row span:first-child{font-weight:700}
 .password-modal{max-width:500px}.password-modal .notice{background:#f3f7fb;border-radius:10px;padding:12px 14px;color:#455a64;font-size:14px;line-height:1.6;margin-bottom:14px}.password-modal .form-field{margin-bottom:10px}
 @media(max-width:900px){.app-layout{display:block}.sidebar{width:100%;position:static;margin-bottom:14px}.sidebar button{width:48%;display:inline-block}.calendar-day{min-height:105px}}
-@media(max-width:600px){.sidebar button{width:100%}.calendar-grid{gap:3px}.calendar-day{min-height:90px;padding:4px}.calendar-event{font-size:11px;padding:4px}.calendar-weekday{font-size:12px;padding:7px}}
+@media(max-width:600px){
+  .sidebar button{width:100%}
+  .calendar-grid{gap:2px}
+  .calendar-day{min-height:82px;padding:3px;overflow:hidden}
+  .calendar-date{font-size:12px;margin-bottom:2px;line-height:16px}
+  .calendar-event{
+    display:flex;
+    align-items:center;
+    gap:3px;
+    width:100%;
+    height:21px;
+    min-height:21px;
+    margin:2px 0;
+    padding:1px 4px;
+    border-left-width:3px;
+    border-radius:4px;
+    font-size:9px;
+    line-height:18px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .calendar-event .time{
+    flex:0 0 auto;
+    font-size:9px;
+    line-height:18px;
+    white-space:nowrap;
+  }
+  .calendar-event .driver{
+    flex:1 1 auto;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:9px;
+    line-height:18px;
+  }
+  .calendar-weekday{font-size:11px;padding:6px 2px}
+}
 
 
 .form-hint{margin:-6px 0 12px;color:#607d8b;font-size:14px}
@@ -131,7 +169,11 @@ th{background:#f5f7f8}
 .billing-paper .money{text-align:right;white-space:nowrap}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
-@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 100px 0 118px}.billing-logo{left:24px;top:8px;width:88px;height:88px;max-width:88px;max-height:88px}.billing-head h1{font-size:23px;letter-spacing:7px}.billing-head h2{font-size:19px;letter-spacing:5px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
+@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 70px 0 108px}.billing-logo{left:24px;top:8px;width:88px;height:88px;max-width:88px;max-height:88px}.billing-head h1{font-size:22px;letter-spacing:4px;white-space:nowrap;word-break:keep-all;overflow:visible}.billing-head h2{font-size:19px;letter-spacing:5px;white-space:nowrap;word-break:keep-all}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
+.salary-exclusion-box .checkbox-grid{display:flex !important;flex-direction:column !important;gap:8px !important;width:100%;}
+.salary-exclusion-box .checkbox-grid > label{display:flex !important;align-items:center !important;width:100% !important;min-width:0 !important;white-space:nowrap !important;overflow:hidden !important;}
+.salary-exclusion-box .checkbox-grid > label .salary-exclusion-customer{width:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important;margin:0 8px 0 0 !important;}
+.salary-exclusion-box .checkbox-grid > label span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 </style>
 
 <style>
@@ -297,7 +339,7 @@ th{background:#f5f7f8}
 <div class="salary-exclusion-box" style="margin-bottom:16px;padding:14px;border:1px solid #e5e7eb;border-radius:12px;background:#f8fafc">
   <div style="font-weight:700;margin-bottom:6px">本月不計入司機薪資的客戶（可複選）</div>
   <div style="font-size:13px;opacity:.7;margin-bottom:10px">例如：90 天請款客戶。勾選後按「套用不計薪」，本月這些客戶的趟次仍會保留，但不會算進司機薪資。</div>
-  <div id="salaryExclusionCustomers" class="checkbox-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;margin-bottom:12px"></div>
+  <div id="salaryExclusionCustomers" class="checkbox-grid" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px"></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button type="button" class="btn-secondary" onclick="applySalaryExclusions(true)">套用不計薪</button>
     <button type="button" class="btn-secondary" onclick="applySalaryExclusions(false)">恢復計入薪資</button>

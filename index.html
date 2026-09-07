@@ -113,7 +113,7 @@ th{background:#f5f7f8}
 
 .form-hint{margin:-6px 0 12px;color:#607d8b;font-size:14px}
 .billing-paper{background:#fff;border:1px solid #d7e1ec;padding:30px;max-width:980px;margin:auto;color:#17324d;box-shadow:0 4px 18px rgba(40,70,100,.06)}
-.billing-head{text-align:center;margin-bottom:20px;position:relative;min-height:112px;padding:0 118px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}.billing-logo{position:absolute;left:20px;top:10px;width:92px;height:92px;object-fit:contain;object-position:center center;display:block;max-width:92px;max-height:92px}.billing-head h1,.billing-head h2{position:relative;z-index:1;margin-left:0;margin-right:0}
+.billing-head{text-align:center;margin-bottom:20px;position:relative;min-height:112px;padding:0 118px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}.billing-logo{position:absolute;left:24px;top:8px;width:88px;height:88px;object-fit:contain;object-position:center center;display:block;max-width:88px;max-height:88px}.billing-head h1,.billing-head h2{position:relative;z-index:1;margin-left:0;margin-right:0}
 .billing-head h1{margin-top:0;margin-bottom:0;font-size:32px;letter-spacing:10px;font-weight:800}
 .billing-head h2{margin:10px 0 18px;font-size:25px;letter-spacing:8px;font-weight:800}
 .billing-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:15px;font-weight:600}
@@ -131,7 +131,7 @@ th{background:#f5f7f8}
 .billing-paper .money{text-align:right;white-space:nowrap}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
-@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 92px}.billing-logo{left:16px;top:10px;width:76px;height:76px;max-width:76px;max-height:76px}.billing-head h1{font-size:23px;letter-spacing:7px}.billing-head h2{font-size:19px;letter-spacing:5px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
+@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 100px 0 118px}.billing-logo{left:24px;top:8px;width:88px;height:88px;max-width:88px;max-height:88px}.billing-head h1{font-size:23px;letter-spacing:7px}.billing-head h2{font-size:19px;letter-spacing:5px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
 </style>
 
 <style>
@@ -1599,12 +1599,12 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   const logo=clone.querySelector(".billing-logo");
   if(logo){
     logo.style.position="absolute";
-    logo.style.left="20px";
-    logo.style.top="10px";
-    logo.style.width="92px";
-    logo.style.height="92px";
-    logo.style.maxWidth="92px";
-    logo.style.maxHeight="92px";
+    logo.style.left="24px";
+    logo.style.top="8px";
+    logo.style.width="88px";
+    logo.style.height="88px";
+    logo.style.maxWidth="88px";
+    logo.style.maxHeight="88px";
     logo.style.objectFit="contain";
     logo.style.objectPosition="center center";
   }
@@ -1636,7 +1636,8 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
     offsetY+=sliceH;
     page++;
   }
-  pdf.save(filename);
+  const blob=pdf.output("blob");
+  downloadBlob(blob,filename);
 }
 window.exportCustomerQuotePDF=async function(){
   const name=getSelectedReportCustomerName().replace(/[\\/:*?"<>|]/g,"_");
@@ -1658,7 +1659,8 @@ window.exportDriverSettlementExcel=function(){
   ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:14},{wch:14},{wch:14},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
   const driverFileName=`${yyyymm(d.month)}${(d.driverName||"司機").replace(/[\\/:*?"<>|]/g,"_")}`;
-   XLSX.writeFile(wb,`${driverFileName}.xlsx`);
+   const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+   downloadBlob(new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),`${driverFileName}.xlsx`);
 };
 
 window.exportDriverSettlementPDF=async function(){

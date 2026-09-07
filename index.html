@@ -1564,7 +1564,54 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   }
   const element=document.getElementById(elementId);
   if(!element){alert("找不到報表內容。");return}
-  const canvas=await html2canvas(element,{scale:2,backgroundColor:"#ffffff",useCORS:true,windowWidth:element.scrollWidth});
+
+  // PDF 一律使用固定的 A4 版面，不讓手機的響應式 CSS 改變 JPG 標誌的位置。
+  // JPG 標誌另外直接由 jsPDF 放入固定座標，並依原始檔案比例自動縮放。
+  const clone=element.cloneNode(true);
+  clone.id=elementId+"_pdf_export";
+  clone.style.cssText += ";position:fixed;left:-10000px;top:0;width:760px;min-width:760px;max-width:760px;margin:0;padding:24px;box-sizing:border-box;background:#fff;color:#123;overflow:visible;";
+  const logo=clone.querySelector(".billing-logo");
+  const logoSrc=logo?.getAttribute("src")||"";
+  if(logo){
+    // 不讓 html2canvas 參與 Logo 排版，避免手機尺寸或 CSS 造成位移。
+    logo.style.visibility="hidden";
+  }
+  const style=document.createElement("style");
+  style.textContent=`
+    #${clone.id}{font-family:Arial,"Noto Sans TC","Microsoft JhengHei",sans-serif!important;}
+    #${clone.id} .billing-head{min-height:86px!important;margin-bottom:16px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;position:relative!important;}
+    #${clone.id} .billing-logo{width:82px!important;height:82px!important;left:8px!important;top:0!important;position:absolute!important;object-fit:contain!important;visibility:hidden!important;}
+    #${clone.id} .billing-head h1{font-size:30px!important;letter-spacing:9px!important;margin:0!important;}
+    #${clone.id} .billing-head h2{font-size:22px!important;letter-spacing:7px!important;margin:7px 0 14px!important;}
+    #${clone.id} .billing-meta{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin-bottom:14px!important;}
+    #${clone.id} .billing-meta div{font-size:14px!important;padding:8px 6px!important;white-space:nowrap!important;}
+    #${clone.id} table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important;font-size:12px!important;}
+    #${clone.id} th,#${clone.id} td{padding:6px 3px!important;line-height:1.25!important;word-break:break-word!important;overflow-wrap:anywhere!important;}
+    #${clone.id} th:nth-child(1),#${clone.id} td:nth-child(1){width:6%!important;}
+    #${clone.id} th:nth-child(2),#${clone.id} td:nth-child(2){width:11%!important;}
+    #${clone.id} th:nth-child(3),#${clone.id} td:nth-child(3){width:12%!important;}
+    #${clone.id} th:nth-child(4),#${clone.id} td:nth-child(4){width:12%!important;}
+    #${clone.id} th:nth-child(5),#${clone.id} td:nth-child(5){width:16%!important;}
+    #${clone.id} th:nth-child(6),#${clone.id} td:nth-child(6){width:14%!important;}
+    #${clone.id} th:nth-child(7),#${clone.id} td:nth-child(7){width:14%!important;}
+    #${clone.id} th:nth-child(8),#${clone.id} td:nth-child(8){width:15%!important;}
+    #${clone.id} .billing-footer{font-size:13px!important;margin-top:12px!important;line-height:1.5!important;}
+  `;
+  clone.prepend(style);
+  document.body.appendChild(clone);
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  const canvas=await html2canvas(clone,{
+    scale:2,
+    backgroundColor:"#ffffff",
+    useCORS:true,
+    width:760,
+    windowWidth:800,
+    scrollX:0,
+    scrollY:0
+  });
+  document.body.removeChild(clone);
+
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation,unit:"mm",format:"a4"});
   const pageW=pdf.internal.pageSize.getWidth();
@@ -1575,6 +1622,30 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   const pageCanvasH=Math.floor((pageH-margin*2)*pxPerMm);
   let offsetY=0;
   let page=0;
+
+  // Logo 固定在每一頁左上方；以原始 JPG 寬高比自動縮放，永遠不變形。
+  const logoBoxX=12;
+  const logoBoxY=10;
+  const logoBoxW=24;
+  const logoBoxH=24;
+  const addFixedLogo=async()=>{
+    if(!logoSrc)return;
+    try{
+      const img=new Image();
+      img.src=logoSrc;
+      await new Promise((resolve,reject)=>{
+        if(img.complete && img.naturalWidth){resolve();return;}
+        img.onload=resolve; img.onerror=reject;
+      });
+      const ratio=Math.min(logoBoxW/img.naturalWidth,logoBoxH/img.naturalHeight);
+      const drawW=logoBoxW*ratio;
+      const drawH=logoBoxH*ratio;
+      const x=logoBoxX+(logoBoxW-drawW)/2;
+      const y=logoBoxY+(logoBoxH-drawH)/2;
+      pdf.addImage(img,"JPEG",x,y,drawW,drawH,undefined,"FAST");
+    }catch(err){console.warn("固定 Logo 匯出失敗",err);}
+  };
+
   while(offsetY<canvas.height){
     const sliceH=Math.min(pageCanvasH,canvas.height-offsetY);
     const slice=document.createElement("canvas");
@@ -1585,6 +1656,7 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
     const imgH=sliceH/pxPerMm;
     if(page>0)pdf.addPage();
     pdf.addImage(slice.toDataURL("image/png"),"PNG",margin,margin,imgW,imgH,"FAST");
+    await addFixedLogo();
     offsetY+=sliceH;
     page++;
   }

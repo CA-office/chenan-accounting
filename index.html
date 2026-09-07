@@ -113,8 +113,8 @@ th{background:#f5f7f8}
 
 .form-hint{margin:-6px 0 12px;color:#607d8b;font-size:14px}
 .billing-paper{background:#fff;border:1px solid #d7e1ec;padding:30px;max-width:980px;margin:auto;color:#17324d;box-shadow:0 4px 18px rgba(40,70,100,.06)}
-.billing-head{text-align:center;margin-bottom:20px;position:relative;min-height:92px;display:flex;flex-direction:column;justify-content:center}.billing-logo{position:absolute;left:23px;top:0;width:92px;height:92px;object-fit:contain}.billing-head h1,.billing-head h2{position:relative;z-index:1}
-.billing-head h1{margin:0;font-size:32px;letter-spacing:10px;font-weight:800}
+.billing-head{text-align:center;margin-bottom:20px;position:relative;min-height:112px;padding:0 118px;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box}.billing-logo{position:absolute;left:20px;top:10px;width:92px;height:92px;object-fit:contain;object-position:center center;display:block;max-width:92px;max-height:92px}.billing-head h1,.billing-head h2{position:relative;z-index:1;margin-left:0;margin-right:0}
+.billing-head h1{margin-top:0;margin-bottom:0;font-size:32px;letter-spacing:10px;font-weight:800}
 .billing-head h2{margin:10px 0 18px;font-size:25px;letter-spacing:8px;font-weight:800}
 .billing-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:8px 0;font-size:15px;font-weight:600}
 .billing-meta>div{padding:8px 12px;background:#f3f7fb;border-radius:8px}
@@ -131,10 +131,21 @@ th{background:#f5f7f8}
 .billing-paper .money{text-align:right;white-space:nowrap}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
-@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:70px}.billing-logo{width:68px;height:68px}.billing-head h1{font-size:23px}.billing-head h2{font-size:19px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
+@media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 92px}.billing-logo{left:16px;top:10px;width:76px;height:76px;max-width:76px;max-height:76px}.billing-head h1{font-size:23px;letter-spacing:7px}.billing-head h2{font-size:19px;letter-spacing:5px}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
+</style>
+
+<style>
+#pullRefreshIndicator{display:none;position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:99999;width:42px;height:42px;border-radius:50%;background:#78909c;color:#fff;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(0,0,0,.18);font-size:22px;pointer-events:none;}
+#pullRefreshIndicator.show{display:flex;}
+#pullRefreshIndicator .pull-spinner{width:22px;height:22px;border:3px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;transition:transform .1s linear;}
+#pullRefreshIndicator.refreshing .pull-spinner{animation:pullSpin .7s linear infinite;}
+@keyframes pullSpin{to{transform:rotate(360deg)}}
+@media(min-width:601px){#pullRefreshIndicator{display:none!important;}}
 </style>
 </head>
 <body>
+<div id="pullRefreshIndicator" aria-hidden="true"><div class="pull-spinner"></div></div>
+
 <div id="loginScreen" class="container">
 <div class="card">
 <div class="login-brand">
@@ -1526,6 +1537,12 @@ function getSelectedReportCustomerName(){
   return customers.find(c=>String(c.id)===String(id))?.name||"全部客戶";
 }
 
+function yyyymm(value){
+  const v=String(value||currentMonth());
+  const m=v.match(/^(\d{4})[-\/](\d{1,2})/);
+  return m ? `${m[1]}${String(m[2]).padStart(2,"0")}` : v.replace(/\D/g,"").slice(0,6);
+}
+
 function downloadBlob(blob, filename){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -1564,54 +1581,38 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   }
   const element=document.getElementById(elementId);
   if(!element){alert("找不到報表內容。");return}
-
-  // PDF 一律使用固定的 A4 版面，不讓手機的響應式 CSS 改變 JPG 標誌的位置。
-  // JPG 標誌另外直接由 jsPDF 放入固定座標，並依原始檔案比例自動縮放。
+  const originalStyle=element.getAttribute("style")||"";
+  const wrapper=document.createElement("div");
+  wrapper.style.position="fixed";
+  wrapper.style.left="-10000px";
+  wrapper.style.top="0";
+  wrapper.style.width="900px";
+  wrapper.style.background="#fff";
+  wrapper.style.padding="0";
+  wrapper.style.margin="0";
   const clone=element.cloneNode(true);
-  clone.id=elementId+"_pdf_export";
-  clone.style.cssText += ";position:fixed;left:-10000px;top:0;width:760px;min-width:760px;max-width:760px;margin:0;padding:24px;box-sizing:border-box;background:#fff;color:#123;overflow:visible;";
+  clone.style.width="900px";
+  clone.style.maxWidth="900px";
+  clone.style.margin="0";
+  clone.style.boxSizing="border-box";
+  clone.style.boxShadow="none";
   const logo=clone.querySelector(".billing-logo");
-  const logoSrc=logo?.getAttribute("src")||"";
   if(logo){
-    // 不讓 html2canvas 參與 Logo 排版，避免手機尺寸或 CSS 造成位移。
-    logo.style.visibility="hidden";
+    logo.style.position="absolute";
+    logo.style.left="20px";
+    logo.style.top="10px";
+    logo.style.width="92px";
+    logo.style.height="92px";
+    logo.style.maxWidth="92px";
+    logo.style.maxHeight="92px";
+    logo.style.objectFit="contain";
+    logo.style.objectPosition="center center";
   }
-  const style=document.createElement("style");
-  style.textContent=`
-    #${clone.id}{font-family:Arial,"Noto Sans TC","Microsoft JhengHei",sans-serif!important;}
-    #${clone.id} .billing-head{min-height:86px!important;margin-bottom:16px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;position:relative!important;}
-    #${clone.id} .billing-logo{width:82px!important;height:82px!important;left:8px!important;top:0!important;position:absolute!important;object-fit:contain!important;visibility:hidden!important;}
-    #${clone.id} .billing-head h1{font-size:30px!important;letter-spacing:9px!important;margin:0!important;}
-    #${clone.id} .billing-head h2{font-size:22px!important;letter-spacing:7px!important;margin:7px 0 14px!important;}
-    #${clone.id} .billing-meta{display:grid!important;grid-template-columns:repeat(4,1fr)!important;gap:8px!important;margin-bottom:14px!important;}
-    #${clone.id} .billing-meta div{font-size:14px!important;padding:8px 6px!important;white-space:nowrap!important;}
-    #${clone.id} table{width:100%!important;table-layout:fixed!important;border-collapse:collapse!important;font-size:12px!important;}
-    #${clone.id} th,#${clone.id} td{padding:6px 3px!important;line-height:1.25!important;word-break:break-word!important;overflow-wrap:anywhere!important;}
-    #${clone.id} th:nth-child(1),#${clone.id} td:nth-child(1){width:6%!important;}
-    #${clone.id} th:nth-child(2),#${clone.id} td:nth-child(2){width:11%!important;}
-    #${clone.id} th:nth-child(3),#${clone.id} td:nth-child(3){width:12%!important;}
-    #${clone.id} th:nth-child(4),#${clone.id} td:nth-child(4){width:12%!important;}
-    #${clone.id} th:nth-child(5),#${clone.id} td:nth-child(5){width:16%!important;}
-    #${clone.id} th:nth-child(6),#${clone.id} td:nth-child(6){width:14%!important;}
-    #${clone.id} th:nth-child(7),#${clone.id} td:nth-child(7){width:14%!important;}
-    #${clone.id} th:nth-child(8),#${clone.id} td:nth-child(8){width:15%!important;}
-    #${clone.id} .billing-footer{font-size:13px!important;margin-top:12px!important;line-height:1.5!important;}
-  `;
-  clone.prepend(style);
-  document.body.appendChild(clone);
+  wrapper.appendChild(clone);
+  document.body.appendChild(wrapper);
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-
-  const canvas=await html2canvas(clone,{
-    scale:2,
-    backgroundColor:"#ffffff",
-    useCORS:true,
-    width:760,
-    windowWidth:800,
-    scrollX:0,
-    scrollY:0
-  });
-  document.body.removeChild(clone);
-
+  const canvas=await html2canvas(clone,{scale:2,backgroundColor:"#ffffff",useCORS:true,windowWidth:900,scrollX:0,scrollY:0});
+  wrapper.remove();
   const {jsPDF}=window.jspdf;
   const pdf=new jsPDF({orientation,unit:"mm",format:"a4"});
   const pageW=pdf.internal.pageSize.getWidth();
@@ -1622,37 +1623,6 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   const pageCanvasH=Math.floor((pageH-margin*2)*pxPerMm);
   let offsetY=0;
   let page=0;
-
-  // Logo 固定在每一頁左上方；以原始 JPG 寬高比自動縮放，永遠不變形。
-  const logoBoxX=12;
-  const logoBoxY=10;
-  const logoBoxW=24;
-  const logoBoxH=24;
-  const addFixedLogo=async()=>{
-    if(!logoSrc)return;
-    try{
-      // 直接把內嵌 JPG Data URI 交給 jsPDF，避免手機/瀏覽器在 Image 物件上遺失圖片。
-      const img=new Image();
-      img.decoding="sync";
-      img.src=logoSrc;
-      await new Promise((resolve,reject)=>{
-        if(img.complete && img.naturalWidth>0){resolve();return;}
-        img.onload=()=>resolve();
-        img.onerror=()=>reject(new Error("Logo 圖檔載入失敗"));
-      });
-      const nw=Number(img.naturalWidth)||1;
-      const nh=Number(img.naturalHeight)||1;
-      const ratio=Math.min(logoBoxW/nw,logoBoxH/nh);
-      const drawW=nw*ratio;
-      const drawH=nh*ratio;
-      const x=logoBoxX+(logoBoxW-drawW)/2;
-      const y=logoBoxY+(logoBoxH-drawH)/2;
-      pdf.addImage(logoSrc,"JPEG",x,y,drawW,drawH,undefined,"FAST");
-    }catch(err){
-      console.warn("固定 Logo 匯出失敗",err);
-    }
-  };
-
   while(offsetY<canvas.height){
     const sliceH=Math.min(pageCanvasH,canvas.height-offsetY);
     const slice=document.createElement("canvas");
@@ -1663,13 +1633,11 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
     const imgH=sliceH/pxPerMm;
     if(page>0)pdf.addPage();
     pdf.addImage(slice.toDataURL("image/png"),"PNG",margin,margin,imgW,imgH,"FAST");
-    await addFixedLogo();
     offsetY+=sliceH;
     page++;
   }
   pdf.save(filename);
 }
-
 window.exportCustomerQuotePDF=async function(){
   const name=getSelectedReportCustomerName().replace(/[\\/:*?"<>|]/g,"_");
   await exportElementToPDF("customerQuoteReportCard",`客戶報價成本報表_${name}_${currentMonth()}.pdf`,`landscape`);
@@ -1689,14 +1657,16 @@ window.exportDriverSettlementExcel=function(){
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:14},{wch:14},{wch:14},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
-  XLSX.writeFile(wb,`司機薪資結算_${d.month}_${d.driverName||"司機"}.xlsx`);
+  const driverFileName=`${yyyymm(d.month)}${(d.driverName||"司機").replace(/[\\/:*?"<>|]/g,"_")}`;
+   XLSX.writeFile(wb,`${driverFileName}.xlsx`);
 };
 
 window.exportDriverSettlementPDF=async function(){
   if(!window.driverSalaryPreviewData){await loadTripSalaryPreview();}
   if(!window.driverSalaryPreviewData){return}
   const d=window.driverSalaryPreviewData;
-  await exportElementToPDF("driverSalarySettlementPreview",`司機薪資結算_${d.month}_${d.driverName||"司機"}.pdf`,`portrait`);
+  const driverFileName=`${yyyymm(d.month)}${(d.driverName||"司機").replace(/[\\/:*?"<>|]/g,"_")}`;
+   await exportElementToPDF("driverSalarySettlementPreview",`${driverFileName}.pdf`,`portrait`);
 };
 
 async function loadTripSalaryPreview(){
@@ -2074,7 +2044,8 @@ window.downloadBillingPDF=async function(){
   if(!billingPreviewData){return}
   const name=(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
   const month=billingPreviewData.month||currentMonth();
-  await exportElementToPDF("billingPreview",`請款單_${name}_${month}.pdf`,"portrait");
+  const billingFileName=`${yyyymm(month)}${name}`;
+   await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
 };
 window.downloadBillingExcel=async function(){
   if(!billingPreviewData){alert("請先選擇客戶");return}
@@ -2127,7 +2098,7 @@ window.downloadBillingExcel=async function(){
   if(d.note){const nr=ws.addRow(["備註：",d.note]);ws.mergeCells(nr.number,2,nr.number,6);}
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`請款明細_${name}_${d.month}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);const billingFileName=`${yyyymm(d.month)}${name}`;a.download=`${billingFileName}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
 
 
@@ -2152,6 +2123,50 @@ client.auth.onAuthStateChange(async (event,session)=>{
 });
 
 checkLogin();
+</script>
+
+<script>
+(function(){
+  const indicator=document.getElementById('pullRefreshIndicator');
+  if(!indicator || !('ontouchstart' in window)) return;
+  let startY=0, pulling=false, refreshing=false;
+  const threshold=78, maxPull=110;
+  document.addEventListener('touchstart',function(e){
+    if(refreshing) return;
+    if(window.scrollY<=0 && e.touches && e.touches.length===1){
+      startY=e.touches[0].clientY;
+      pulling=true;
+    }
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!pulling || refreshing || !e.touches || !e.touches.length) return;
+    if(window.scrollY>0){ pulling=false; indicator.classList.remove('show'); return; }
+    const distance=Math.max(0,Math.min(maxPull,e.touches[0].clientY-startY));
+    if(distance>8){
+      indicator.classList.add('show');
+      const spinner=indicator.querySelector('.pull-spinner');
+      if(spinner) spinner.style.transform='rotate('+(distance/maxPull*270)+'deg)';
+    }
+  },{passive:true});
+  document.addEventListener('touchend',function(){
+    if(!pulling || refreshing) return;
+    pulling=false;
+    const spinner=indicator.querySelector('.pull-spinner');
+    const angle=spinner && spinner.style.transform ? parseFloat(spinner.style.transform.replace(/[^0-9.-]/g,'')) : 0;
+    if(angle>=190){
+      refreshing=true;
+      indicator.classList.add('show','refreshing');
+      if(spinner) spinner.style.transform='';
+      setTimeout(function(){ location.reload(); },350);
+    }else{
+      indicator.classList.remove('show');
+      if(spinner) spinner.style.transform='';
+    }
+  },{passive:true});
+  document.addEventListener('touchcancel',function(){
+    pulling=false; indicator.classList.remove('show');
+  },{passive:true});
+})();
 </script>
 </body>
 </html>

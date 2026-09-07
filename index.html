@@ -1631,19 +1631,26 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
   const addFixedLogo=async()=>{
     if(!logoSrc)return;
     try{
+      // 直接把內嵌 JPG Data URI 交給 jsPDF，避免手機/瀏覽器在 Image 物件上遺失圖片。
       const img=new Image();
+      img.decoding="sync";
       img.src=logoSrc;
       await new Promise((resolve,reject)=>{
-        if(img.complete && img.naturalWidth){resolve();return;}
-        img.onload=resolve; img.onerror=reject;
+        if(img.complete && img.naturalWidth>0){resolve();return;}
+        img.onload=()=>resolve();
+        img.onerror=()=>reject(new Error("Logo 圖檔載入失敗"));
       });
-      const ratio=Math.min(logoBoxW/img.naturalWidth,logoBoxH/img.naturalHeight);
-      const drawW=logoBoxW*ratio;
-      const drawH=logoBoxH*ratio;
+      const nw=Number(img.naturalWidth)||1;
+      const nh=Number(img.naturalHeight)||1;
+      const ratio=Math.min(logoBoxW/nw,logoBoxH/nh);
+      const drawW=nw*ratio;
+      const drawH=nh*ratio;
       const x=logoBoxX+(logoBoxW-drawW)/2;
       const y=logoBoxY+(logoBoxH-drawH)/2;
-      pdf.addImage(img,"JPEG",x,y,drawW,drawH,undefined,"FAST");
-    }catch(err){console.warn("固定 Logo 匯出失敗",err);}
+      pdf.addImage(logoSrc,"JPEG",x,y,drawW,drawH,undefined,"FAST");
+    }catch(err){
+      console.warn("固定 Logo 匯出失敗",err);
+    }
   };
 
   while(offsetY<canvas.height){

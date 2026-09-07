@@ -1658,7 +1658,7 @@ window.exportDriverSettlementExcel=function(){
   const ws=XLSX.utils.json_to_sheet(rows);
   ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:14},{wch:14},{wch:14},{wch:12}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
-  const driverFileName=`${yyyymm(d.month)}${(d.driverName||"司機").replace(/[\\/:*?"<>|]/g,"_")}`;
+  const driverFileName=`${yyyymm(d.month)}_${(d.driverName||"司機").replace(/[\/:*?"<>|]/g,"_")}`;
    const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
    downloadBlob(new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),`${driverFileName}.xlsx`);
 };
@@ -1667,7 +1667,7 @@ window.exportDriverSettlementPDF=async function(){
   if(!window.driverSalaryPreviewData){await loadTripSalaryPreview();}
   if(!window.driverSalaryPreviewData){return}
   const d=window.driverSalaryPreviewData;
-  const driverFileName=`${yyyymm(d.month)}${(d.driverName||"司機").replace(/[\\/:*?"<>|]/g,"_")}`;
+  const driverFileName=`${yyyymm(d.month)}_${(d.driverName||"司機").replace(/[\/:*?"<>|]/g,"_")}`;
    await exportElementToPDF("driverSalarySettlementPreview",`${driverFileName}.pdf`,`portrait`);
 };
 
@@ -2046,7 +2046,8 @@ window.downloadBillingPDF=async function(){
   if(!billingPreviewData){return}
   const name=(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
   const month=billingPreviewData.month||currentMonth();
-  const billingFileName=`${yyyymm(month)}${name}`;
+  const driverName=((billingPreviewData.rows||[]).find(r=>r.driver)?.driver||"司機").replace(/[\/:*?"<>|]/g,"_");
+  const billingFileName=`${yyyymm(month)}_${driverName}`;
    await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
 };
 window.downloadBillingExcel=async function(){
@@ -2100,7 +2101,7 @@ window.downloadBillingExcel=async function(){
   if(d.note){const nr=ws.addRow(["備註：",d.note]);ws.mergeCells(nr.number,2,nr.number,6);}
   const buffer=await wb.xlsx.writeBuffer();
   const blob=new Blob([buffer],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
-  const a=document.createElement("a");a.href=URL.createObjectURL(blob);const billingFileName=`${yyyymm(d.month)}${name}`;a.download=`${billingFileName}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);const driverName=((d.rows||[]).find(r=>r.driver)?.driver||"司機").replace(/[\/:*?"<>|]/g,"_");const billingFileName=`${yyyymm(d.month)}_${driverName}`;a.download=`${billingFileName}.xlsx`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 };
 
 

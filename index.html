@@ -381,7 +381,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
 </div>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>台數</th><th>寄倉天數</th><th>備註</th><th>本月薪資</th><th>操作</th>
+<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>台數</th><th>寄倉天數</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>備註</th><th>本月薪資</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -1609,7 +1609,7 @@ async function loadTrips(){
     const warehouseDays=customerName.includes("奧齒泰")?getWarehouseDaysFromNote(item.note):0;
     const warehouseText=warehouseDays?`${warehouseDays}天`:"";
     const visibleNote=stripVehicleMarker(item.note||"");
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(visibleNote)}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(visibleNote)}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
   if(!window._tripCache.length)list.innerHTML='<tr><td colspan="14">這個月份目前沒有趟次紀錄</td></tr>';
@@ -2116,7 +2116,7 @@ function renderBillingPreview(){
       <div>日期：${safe(date)}</div>
     </div>
     <table>
-      <thead><tr><th>項次</th><th>日期</th>${showQty?"<th>台數</th>":""}${showWarehouse?"<th>寄倉天數</th>":""}<th>運送地區／項目</th><th>運送金額</th><th>備註</th></tr></thead>
+      <thead><tr><th>項次</th><th>日期</th>${showQty?"<th>台數</th>":""}${showWarehouse?"<th>寄倉天數</th>":""}<th>運送地點／廠商</th><th>金額</th><th>備註</th></tr></thead>
       <tbody>${rows}</tbody>
       <tr class="billing-total"><td colspan="${(showQty||showWarehouse)?4:3}">小計</td><td class="money">${money(subtotal)}</td><td></td></tr>
       <tr class="billing-total"><td colspan="${(showQty||showWarehouse)?4:3}">${rate}% 營業稅</td><td class="money">${money(tax)}</td><td></td></tr>
@@ -2243,7 +2243,7 @@ window.downloadBillingExcel=async function(){
   ws.getCell("A4").value="請款月份："+monthLabel(d.month);
   ws.mergeCells("A3:B3"); ws.mergeCells("C3:D3"); ws.mergeCells("E3:F3"); ws.mergeCells("A4:F4");
   ["A3","C3","E3","A4"].forEach(c=>{ws.getCell(c).font={bold:true,size:11};});
-  const headerRow=ws.addRow(showQty?["項次","日期","台數","運送地區／項目","運送金額","備註"]:showWarehouse?["項次","日期","寄倉天數","運送地區／項目","運送金額","備註"]:["項次","日期","運送地區／項目","運送金額","備註"]);
+  const headerRow=ws.addRow(showQty?["項次","日期","台數","運送地點／廠商","金額","備註"]:showWarehouse?["項次","日期","寄倉天數","運送地點／廠商","金額","備註"]:["項次","日期","運送地點／廠商","金額","備註"]);
   headerRow.eachCell(cell=>{cell.font={bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF58718B"}};cell.alignment={horizontal:"center",vertical:"middle"};cell.border={top:{style:"thin"},left:{style:"thin"},bottom:{style:"thin"},right:{style:"thin"}};});
   d.rows.forEach((r,i)=>{
     const row=ws.addRow(showQty?[i+1,formatBillDate(r.date),formatVehicleCount(r.vehicleCount,r.vehicleSize),r.area,r.amount,r.note||""]:showWarehouse?[i+1,formatBillDate(r.date),Number(r.warehouseDays||0)?String(r.warehouseDays)+"天":"",r.area,r.amount,r.note||""]:[i+1,formatBillDate(r.date),r.area,r.amount,r.note||""]);

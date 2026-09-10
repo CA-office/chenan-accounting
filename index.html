@@ -328,8 +328,8 @@ th{background:#f5f7f8}
 </div>
 <div class="grid" style="margin-top:14px">
 <div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟油資" oninput="previewTripPrice()"></div>
-<div class="form-field" id="tripVehicleField" style="display:none"><label for="tripVehicleCount">台數</label><div class="vehicle-count-inline"><input id="tripVehicleCount" type="number" min="0" step="1" value="" inputmode="numeric" placeholder="例如：1"><select id="tripVehicleSize" aria-label="車型"><option value="大">大台</option><option value="小">小台</option></select></div></div>
-<div class="form-field" id="tripWarehouseField" style="display:none"><label for="tripWarehouseDays">寄倉天數</label><input id="tripWarehouseDays" type="number" min="0" step="1" value="0" inputmode="numeric" placeholder="請輸入天數"></div>
+<div class="form-field" id="tripVehicleField"><label for="tripVehicleCount">台數</label><div class="vehicle-count-inline"><input id="tripVehicleCount" type="number" min="0" step="1" value="" inputmode="numeric" placeholder="例如：1"><select id="tripVehicleSize" aria-label="車型"><option value="大">大台</option><option value="小">小台</option></select></div></div>
+<div class="form-field" id="tripWarehouseField"><label for="tripWarehouseDays">寄倉天數</label><input id="tripWarehouseDays" type="number" min="0" step="1" value="0" inputmode="numeric" placeholder="請輸入天數"></div>
 <div class="form-field"><label for="tripNote">備註</label><input id="tripNote" type="text" placeholder="請輸入備註"></div>
 </div>
 <div class="price-preview">
@@ -1385,16 +1385,12 @@ function formatVehicleCount(q,size){
 }
 
 function updateSpecialTripFields(){
-  const sel=document.getElementById("tripCustomer");
-  const customerName=sel?.options?.[sel.selectedIndex]?.text||"";
-  const isXiaoti=customerName.includes("小緹大");
-  const isAoti=customerName.includes("奧齒泰");
+  // 新增司機趟次時，台數與寄倉天數欄位固定保留，讓使用者隨時可以輸入。
+  // 是否顯示在請款單，仍由請款單依客戶判斷：小緹大作顯示台數、奧齒泰顯示寄倉天數。
   const vf=document.getElementById("tripVehicleField");
   const wf=document.getElementById("tripWarehouseField");
-  if(vf){ vf.style.display=""; vf.style.visibility=isXiaoti?"visible":"hidden"; vf.style.pointerEvents=isXiaoti?"auto":"none"; }
-  if(wf){ wf.style.display=""; wf.style.visibility=isAoti?"visible":"hidden"; wf.style.pointerEvents=isAoti?"auto":"none"; }
-  if(!isXiaoti){ const q=document.getElementById("tripVehicleCount"); if(q)q.value=""; }
-  if(!isAoti){ const w=document.getElementById("tripWarehouseDays"); if(w)w.value=""; }
+  if(vf){ vf.style.display=""; vf.style.visibility="visible"; vf.style.pointerEvents="auto"; }
+  if(wf){ wf.style.display=""; wf.style.visibility="visible"; wf.style.pointerEvents="auto"; }
 }
 
 window.saveTrip=async function(){

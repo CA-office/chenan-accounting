@@ -174,6 +174,11 @@ th{background:#f5f7f8}
 .salary-exclusion-box .checkbox-grid > label{display:flex !important;align-items:center !important;width:100% !important;min-width:0 !important;white-space:nowrap !important;overflow:hidden !important;}
 .salary-exclusion-box .checkbox-grid > label .salary-exclusion-customer{width:20px !important;min-width:20px !important;max-width:20px !important;flex:0 0 20px !important;margin:0 8px 0 0 !important;}
 .salary-exclusion-box .checkbox-grid > label span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vendor-select-inline{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.vendor-select-inline select{flex:1;min-width:0;margin:0}
+.vendor-remove-btn{width:34px!important;min-width:34px;height:34px;padding:0!important;margin:0!important;border-radius:50%!important;background:#b71c1c!important;color:#fff!important;font-size:20px!important;line-height:34px!important;text-align:center!important;font-weight:700!important}
+.vendor-remove-btn:disabled{opacity:.35;cursor:not-allowed}
+
 </style>
 
 <style>
@@ -307,7 +312,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
 <div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems()"><option value="">請選擇客戶</option></select></div>
-<div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><select id="tripItem" onchange="previewTripPrice()"><option value="">請先選擇客戶</option></select><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
+<div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
 <div class="form-field"><label for="tripDriverFeeInput">運費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟運費"></div>
 <div class="form-field"><label for="tripDescription">地點</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
 <div class="form-field"><label for="tripDriverCash">收現</label><input id="tripDriverCash" type="number" min="0" step="1" value="0" placeholder="本趟司機代收現金"></div>
@@ -397,14 +402,6 @@ th{background:#f5f7f8}
 <div class="table-wrap"><table><thead><tr>
 <th>公司抬頭</th><th>統一編號</th><th>聯絡人</th><th>電話</th><th>地址</th><th>備註</th><th>操作</th>
 </tr></thead><tbody id="customerList"></tbody></table></div>
-</div>
-
-<div class="card">
-<h2>廠商管理</h2>
-<div style="font-size:13px;color:#78909c;margin-bottom:8px">可直接修改或刪除各客戶底下的廠商。修改後，「趟次結算」的廠商下拉選單會同步更新。</div>
-<div class="table-wrap"><table><thead><tr>
-<th>客戶</th><th>廠商名稱</th><th>操作</th>
-</tr></thead><tbody id="customerItemList"></tbody></table></div>
 </div>
 
 <div class="card" id="driverManagementCard">
@@ -1176,22 +1173,7 @@ async function loadCustomerItems(){
   const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
   if(error){console.error(error);return}
   customerItems=data||[];
-
-  const list=document.getElementById("customerItemList");
-  if(!list)return;
-
-  const rows=customerItems.filter(item=>item.active!==false);
-  list.innerHTML="";
-  rows.forEach(item=>{
-    const customerName=item.customers?.name||customers.find(c=>String(c.id)===String(item.customer_id))?.name||"";
-    const row=document.createElement("tr");
-    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name||"")}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
-    list.appendChild(row);
-  });
-
-  if(!rows.length){
-    list.innerHTML='<tr><td colspan="3">目前沒有廠商資料</td></tr>';
-  }
+  // 客戶項目不再獨立顯示列表，但仍保留資料快取，供新增趟次、請款單等功能使用。
 }
 window.editCustomerItem=function(id){
   const item=customerItems.find(i=>String(i.id)===String(id));
@@ -1211,7 +1193,6 @@ window.deleteCustomerItem=async function(id){
   if(!confirm("確定要刪除這個客戶廠商嗎？"))return;
   const {error}=await client.from("customer_items").delete().eq("id",id);
   if(error){alert("刪除失敗："+error.message);return}
-  if(String(editingCustomerItemId)===String(id))cancelCustomerEdit();
   await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
 };
 
@@ -1260,10 +1241,41 @@ window.saveQuickTripItem=async function(){
   alert("廠商新增成功，司機費請在本趟趟次中自行輸入。");
 };
 
+
+function syncVendorRemoveButton(){
+  const select=document.getElementById("tripItem");
+  const btn=document.getElementById("tripItemRemoveBtn");
+  if(!select||!btn)return;
+  btn.disabled=!select.value;
+}
+
+window.removeSelectedTripVendor=async function(){
+  const select=document.getElementById("tripItem");
+  if(!select?.value){
+    alert("請先選擇要移除的廠商。");
+    return;
+  }
+
+  const itemId=select.value;
+  const itemName=select.options[select.selectedIndex]?.textContent?.trim()||"此廠商";
+
+  if(!confirm(`確定要移除「${itemName}」嗎？`))return;
+
+  const {error}=await client.from("customer_items").delete().eq("id",itemId);
+  if(error){
+    alert("移除失敗："+error.message);
+    return;
+  }
+
+  await loadCustomerItems();
+  await loadTripItems();
+};
+
 window.loadTripItems=async function(){
   const customerId=document.getElementById("tripCustomer").value;
   const select=document.getElementById("tripItem");
   select.innerHTML='<option value="">請選擇項目</option>';
+  syncVendorRemoveButton();
   if(!customerId){previewTripPrice();return}
   const {data,error}=await client.from("customer_items")
     .select("*, customers(name)")
@@ -1277,6 +1289,7 @@ window.loadTripItems=async function(){
     const opt=document.createElement("option");
     opt.value=item.id; opt.textContent=item.name; select.appendChild(opt);
   });
+  syncVendorRemoveButton();
   previewTripPrice();
 };
 window.previewTripPrice=function(){

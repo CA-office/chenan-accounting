@@ -399,6 +399,14 @@ th{background:#f5f7f8}
 </tr></thead><tbody id="customerList"></tbody></table></div>
 </div>
 
+<div class="card">
+<h2>廠商管理</h2>
+<div style="font-size:13px;color:#78909c;margin-bottom:8px">可直接修改或刪除各客戶底下的廠商。修改後，「趟次結算」的廠商下拉選單會同步更新。</div>
+<div class="table-wrap"><table><thead><tr>
+<th>客戶</th><th>廠商名稱</th><th>操作</th>
+</tr></thead><tbody id="customerItemList"></tbody></table></div>
+</div>
+
 <div class="card" id="driverManagementCard">
 <h2 id="employeeFormTitle">新增司機</h2>
 <div class="grid">
@@ -518,7 +526,7 @@ let currentUserDisplayName = "";
 let currentUserMustChangePassword = false;
 
 function money(value){
-  return new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(value)||0);
+  return new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(value)||0);
 }
 function safe(value){
   const div=document.createElement("div");
@@ -1168,7 +1176,22 @@ async function loadCustomerItems(){
   const {data,error}=await client.from("customer_items").select("*, customers(name)").order("created_at",{ascending:false});
   if(error){console.error(error);return}
   customerItems=data||[];
-  // 客戶項目不再獨立顯示列表，但仍保留資料快取，供新增趟次、請款單等功能使用。
+
+  const list=document.getElementById("customerItemList");
+  if(!list)return;
+
+  const rows=customerItems.filter(item=>item.active!==false);
+  list.innerHTML="";
+  rows.forEach(item=>{
+    const customerName=item.customers?.name||customers.find(c=>String(c.id)===String(item.customer_id))?.name||"";
+    const row=document.createElement("tr");
+    row.innerHTML=`<td>${safe(customerName)}</td><td>${safe(item.name||"")}</td><td><div class="actions"><button class="btn-secondary" onclick="editCustomerItem(${item.id})">修改</button><button class="btn-danger" onclick="deleteCustomerItem(${item.id})">刪除</button></div></td>`;
+    list.appendChild(row);
+  });
+
+  if(!rows.length){
+    list.innerHTML='<tr><td colspan="3">目前沒有廠商資料</td></tr>';
+  }
 }
 window.editCustomerItem=function(id){
   const item=customerItems.find(i=>String(i.id)===String(id));
@@ -1188,6 +1211,7 @@ window.deleteCustomerItem=async function(id){
   if(!confirm("確定要刪除這個客戶廠商嗎？"))return;
   const {error}=await client.from("customer_items").delete().eq("id",id);
   if(error){alert("刪除失敗："+error.message);return}
+  if(String(editingCustomerItemId)===String(id))cancelCustomerEdit();
   await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
 };
 

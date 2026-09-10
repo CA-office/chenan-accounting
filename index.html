@@ -328,9 +328,9 @@ th{background:#f5f7f8}
 </div>
 <div class="grid" style="margin-top:14px">
 <div class="form-field"><label for="tripFuel">油資</label><input id="tripFuel" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟油資" oninput="previewTripPrice()"></div>
-<div class="form-field" id="tripVehicleField" style="display:none"><label for="tripVehicleCount">台數</label><div class="vehicle-count-inline"><input id="tripVehicleCount" type="number" min="0" step="1" value="1" inputmode="numeric" placeholder="例如：1"><select id="tripVehicleSize" aria-label="車型"><option value="大">大台</option><option value="小">小台</option></select></div></div>
+<div class="form-field" id="tripVehicleField" style="display:none"><label for="tripVehicleCount">台數</label><div class="vehicle-count-inline"><input id="tripVehicleCount" type="number" min="0" step="1" value="" inputmode="numeric" placeholder="例如：1"><select id="tripVehicleSize" aria-label="車型"><option value="大">大台</option><option value="小">小台</option></select></div></div>
 <div class="form-field" id="tripWarehouseField" style="display:none"><label for="tripWarehouseDays">寄倉天數</label><input id="tripWarehouseDays" type="number" min="0" step="1" value="0" inputmode="numeric" placeholder="請輸入天數"></div>
-<div class="form-field"><label for="tripNote">備註</label><textarea id="tripNote" placeholder="請輸入備註"></textarea></div>
+<div class="form-field"><label for="tripNote">備註</label><input id="tripNote" type="text" placeholder="請輸入備註"></div>
 </div>
 <div class="price-preview">
 <div class="total-line"><span>運費</span><span id="tripDriverTotal">$0</span></div>
@@ -381,7 +381,7 @@ th{background:#f5f7f8}
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
 </div>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>本月薪資</th><th>操作</th>
+<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>台數</th><th>寄倉天數</th><th>備註</th><th>本月薪資</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -1351,9 +1351,14 @@ document.getElementById("tripDate").addEventListener("blur",function(){
 
 function stripVehicleMarker(note){
   return String(note||"")
+    .replace(/\s*\[\[vehicle_count:([0-9.]+)\]\]\s*/g," ")
     .replace(/\s*\[\[vehicle_size:(大|小)\]\]\s*/g," ")
     .replace(/\s*\[\[warehouse_days:([0-9.]+)\]\]\s*/g," ")
     .trim();
+}
+function getVehicleCountFromNote(note){
+  const m=String(note||"").match(/\[\[vehicle_count:([0-9.]+)\]\]/);
+  return m?Number(m[1]):0;
 }
 function getVehicleSizeFromNote(note){
   const m=String(note||"").match(/\[\[vehicle_size:(大|小)\]\]/);
@@ -1363,10 +1368,14 @@ function getWarehouseDaysFromNote(note){
   const m=String(note||"").match(/\[\[warehouse_days:([0-9.]+)\]\]/);
   return m?Number(m[1]):0;
 }
-function buildTripStoredNote(visibleNote,size,warehouseDays){
+function buildTripStoredNote(visibleNote,vehicleCount,size,warehouseDays){
   const clean=stripVehicleMarker(visibleNote);
+  const count=Number(vehicleCount||0);
   const days=Number(warehouseDays||0);
-  return (clean?clean+" ":"")+`[[vehicle_size:${size==="小"?"小":"大"}]] [[warehouse_days:${days}]]`;
+  const markers=[];
+  if(count>0){ markers.push(`[[vehicle_count:${count}]]`,`[[vehicle_size:${size==="小"?"小":"大"}]]`); }
+  if(days>0){ markers.push(`[[warehouse_days:${days}]]`); }
+  return [clean,...markers].filter(Boolean).join(" ").trim();
 }
 function formatVehicleCount(q,size){
   const n=Number(q||0);
@@ -1382,10 +1391,10 @@ function updateSpecialTripFields(){
   const isAoti=customerName.includes("奧齒泰");
   const vf=document.getElementById("tripVehicleField");
   const wf=document.getElementById("tripWarehouseField");
-  if(vf) vf.style.display=isXiaoti?"":"none";
-  if(wf) wf.style.display=isAoti?"":"none";
-  if(!isXiaoti){ const q=document.getElementById("tripVehicleCount"); if(q)q.value=1; }
-  if(!isAoti){ const w=document.getElementById("tripWarehouseDays"); if(w)w.value=0; }
+  if(vf){ vf.style.display=""; vf.style.visibility=isXiaoti?"visible":"hidden"; vf.style.pointerEvents=isXiaoti?"auto":"none"; }
+  if(wf){ wf.style.display=""; wf.style.visibility=isAoti?"visible":"hidden"; wf.style.pointerEvents=isAoti?"auto":"none"; }
+  if(!isXiaoti){ const q=document.getElementById("tripVehicleCount"); if(q)q.value=""; }
+  if(!isAoti){ const w=document.getElementById("tripWarehouseDays"); if(w)w.value=""; }
 }
 
 window.saveTrip=async function(){
@@ -1404,10 +1413,10 @@ window.saveTrip=async function(){
   const driver_fee=Number(document.getElementById("tripDriverFeeInput").value||0);
   const description=document.getElementById("tripDescription").value.trim();
   const visible_note=document.getElementById("tripNote").value.trim();
-  const quantity=Number(document.getElementById("tripVehicleCount")?.value||0);
+  const vehicle_count=Number(document.getElementById("tripVehicleCount")?.value||0);
   const vehicle_size=document.getElementById("tripVehicleSize")?.value||"大";
   const warehouse_days=Number(document.getElementById("tripWarehouseDays")?.value||0);
-  const note=buildTripStoredNote(visible_note,vehicle_size,warehouse_days);
+  const note=buildTripStoredNote(visible_note,vehicle_count,vehicle_size,warehouse_days);
   const fuel_cost=Number(document.getElementById("tripFuel").value||0);
   const driver_cash=Number(document.getElementById("tripDriverCash").value||0);
   const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
@@ -1418,12 +1427,12 @@ window.saveTrip=async function(){
   if(!customer_item_id||!item){alert("請選擇客戶廠商");return}
   if(driver_fee<0){alert("司機費不能小於 0");return}
   if(fuel_cost<0){alert("油資不能小於 0");return}
-  if(quantity<0){alert("台數不能小於 0");return}
+  if(vehicle_count<0){alert("台數不能小於 0");return}
   if(warehouse_days<0){alert("寄倉天數不能小於 0");return}
   if(driver_cash<0){alert("司機收現不能小於 0");return}
   const payload={
     employee_id,trip_date,trip_time,customer_id,customer_item_id,description,
-    quantity,customer_price:0,driver_fee,fuel_cost,driver_cash,note
+    quantity:1,customer_price:0,driver_fee,fuel_cost,driver_cash,note
   };
   const result=editingTripId
     ? await client.from("driver_trips").update(payload).eq("id",editingTripId)
@@ -1444,12 +1453,13 @@ window.editTrip=async function(id){
   document.getElementById("tripDate").value=displayDate(trip.trip_date);
   document.getElementById("tripTime").value=trip.trip_time||"";
    document.getElementById("tripFuel").value=Number(trip.fuel_cost||0);
-  document.getElementById("tripVehicleCount").value=Number(trip.quantity||1);
+  document.getElementById("tripVehicleCount").value=getVehicleCountFromNote(trip.note)||"";
   document.getElementById("tripVehicleSize").value=getVehicleSizeFromNote(trip.note);
   document.getElementById("tripWarehouseDays").value=getWarehouseDaysFromNote(trip.note);
   document.getElementById("tripCustomer").value=trip.customer_id;
   await loadTripItems();
   document.getElementById("tripItem").value=trip.customer_item_id||"";
+  updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
   document.getElementById("tripDriverCash").value=Number(trip.driver_cash||0);
   document.getElementById("tripDescription").value=trip.description||"";
@@ -1470,10 +1480,11 @@ window.cancelTripEdit=function(){
     document.getElementById("tripDescription").value="";
   document.getElementById("tripDriverCash").value=0;
   document.getElementById("tripFuel").value=0;
-  document.getElementById("tripVehicleCount").value=1;
+  document.getElementById("tripVehicleCount").value="";
   document.getElementById("tripVehicleSize").value="大";
-  document.getElementById("tripWarehouseDays").value=0;
+  document.getElementById("tripWarehouseDays").value="";
   document.getElementById("tripNote").value="";
+  updateSpecialTripFields();
   previewTripPrice();
 };
 window.deleteTrip=async function(id){
@@ -1597,10 +1608,15 @@ async function loadTrips(){
     const row=document.createElement("tr");
     const gross=Number(item.driver_fee||0)*Number(item.quantity||0);
     const salaryText=item.salary_excluded?'<span style="display:inline-block;padding:3px 8px;border-radius:999px;background:#fee2e2;color:#b91c1c;font-size:12px;font-weight:700">不計薪</span>':'<span style="display:inline-block;padding:3px 8px;border-radius:999px;background:#dcfce7;color:#166534;font-size:12px;font-weight:700">計入</span>';
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    const customerName=String(item.customers?.name||"");
+    const vehicleText=customerName.includes("小緹大")?formatVehicleCount(getVehicleCountFromNote(item.note),getVehicleSizeFromNote(item.note)):"";
+    const warehouseDays=customerName.includes("奧齒泰")?getWarehouseDaysFromNote(item.note):0;
+    const warehouseText=warehouseDays?`${warehouseDays}天`:"";
+    const visibleNote=stripVehicleMarker(item.note||"");
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(visibleNote)}</td><td>${salaryText}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
-  if(!window._tripCache.length)list.innerHTML='<tr><td colspan="11">這個月份目前沒有趟次紀錄</td></tr>';
+  if(!window._tripCache.length)list.innerHTML='<tr><td colspan="14">這個月份目前沒有趟次紀錄</td></tr>';
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
   await loadTripRecordSalaryExclusionCustomers();
@@ -2053,6 +2069,7 @@ async function loadBillingPreview(){
     return {
       date:t.trip_date||"",
       qty,
+      vehicleCount:getVehicleCountFromNote(t.note),
       vehicleSize:getVehicleSizeFromNote(t.note),
       warehouseDays:getWarehouseDaysFromNote(t.note),
       area:t.description||item.name||"",
@@ -2084,7 +2101,7 @@ function renderBillingPreview(){
     <tr>
       <td>${i+1}</td>
       <td>${safe(formatBillDate(r.date))}</td>
-      ${showQty?`<td>${safe(formatVehicleCount(r.qty,r.vehicleSize))}</td>`:""}
+      ${showQty?`<td>${safe(formatVehicleCount(r.vehicleCount,r.vehicleSize))}</td>`:""}
       ${showWarehouse?`<td>${Number(r.warehouseDays||0)?safe(String(r.warehouseDays)+"天"):""}</td>`:""}
       <td>${safe(r.area)}</td>
       <td class="money">${money(r.amount)}</td>
@@ -2233,7 +2250,7 @@ window.downloadBillingExcel=async function(){
   const headerRow=ws.addRow(showQty?["項次","日期","台數","運送地區／項目","運送金額","備註"]:showWarehouse?["項次","日期","寄倉天數","運送地區／項目","運送金額","備註"]:["項次","日期","運送地區／項目","運送金額","備註"]);
   headerRow.eachCell(cell=>{cell.font={bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF58718B"}};cell.alignment={horizontal:"center",vertical:"middle"};cell.border={top:{style:"thin"},left:{style:"thin"},bottom:{style:"thin"},right:{style:"thin"}};});
   d.rows.forEach((r,i)=>{
-    const row=ws.addRow(showQty?[i+1,formatBillDate(r.date),formatVehicleCount(r.qty,r.vehicleSize),r.area,r.amount,r.note||""]:showWarehouse?[i+1,formatBillDate(r.date),Number(r.warehouseDays||0)?String(r.warehouseDays)+"天":"",r.area,r.amount,r.note||""]:[i+1,formatBillDate(r.date),r.area,r.amount,r.note||""]);
+    const row=ws.addRow(showQty?[i+1,formatBillDate(r.date),formatVehicleCount(r.vehicleCount,r.vehicleSize),r.area,r.amount,r.note||""]:showWarehouse?[i+1,formatBillDate(r.date),Number(r.warehouseDays||0)?String(r.warehouseDays)+"天":"",r.area,r.amount,r.note||""]:[i+1,formatBillDate(r.date),r.area,r.amount,r.note||""]);
     const amountCol=(showQty||showWarehouse)?5:4;
     row.getCell(amountCol).numFmt='#,##0';
     row.eachCell(cell=>{cell.border={top:{style:"thin"},left:{style:"thin"},bottom:{style:"thin"},right:{style:"thin"}};cell.alignment={vertical:"middle"};});

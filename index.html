@@ -690,7 +690,8 @@ function renderCurrentUserBar(){
   if(homeName)homeName.textContent=currentUserDisplayName||"使用者";
   if(homeRole)homeRole.textContent=currentUserRole==="admin"?"管理者":"使用者";
 
-  // 行事曆目前暫時只提供管理者；使用者先隱藏。
+  // 管理者與使用者共用同一套趟次欄位邏輯；
+  // 只有「行事曆」目前暫時不提供給使用者。
   const calendarNavBtn=document.getElementById("calendarNavBtn");
   const calendarSection=document.getElementById("calendar");
   const isAdmin=currentUserRole==="admin";
@@ -700,6 +701,11 @@ function renderCurrentUserBar(){
   if(calendarSection && !isAdmin){
     calendarSection.classList.remove("active");
   }
+
+  // 角色切換後重新套用特殊客戶欄位：
+  // 奧齒泰 => 寄倉天數 + 組數一起顯示
+  // 其他客戶 => 兩欄一起隱藏
+  updateSpecialTripFields();
 }
 
 
@@ -919,6 +925,8 @@ async function showApp(){
   document.getElementById("billDate").value=today();
   document.getElementById("billMonth").value=currentMonth();
   await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
+  // 客戶載入完成後，管理者與使用者都重新判斷奧齒泰欄位
+  updateSpecialTripFields();
   populateBillingCustomers();
   await loadDashboard();
   await loadTripSummary();
@@ -1214,6 +1222,7 @@ async function loadCustomers(){
     }
   });
   renderTripSettlementDriverFilter();
+  updateSpecialTripFields();
 }
 
 async function loadCustomerItems(){
@@ -1450,6 +1459,7 @@ function updateSpecialTripFields(){
   const wf=document.getElementById("tripWarehouseField");
   const gf=document.getElementById("tripGroupField");
 
+  // 不分管理者/使用者：規則完全相同
   if(wf){
     wf.style.display=isAo?"":"none";
     wf.style.visibility=isAo?"visible":"";

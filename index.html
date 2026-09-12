@@ -1066,7 +1066,7 @@ async function saveCustomerAndItem(){
     if(!itemName){alert("請輸入廠商名稱");return}
     const {error}=await client.from("customer_items").update({customer_id:selectedCustomerId,name:itemName}).eq("id",editingCustomerItemId);
     if(error){alert("客戶廠商修改失敗："+error.message);return}
-    alert("客戶廠商修改成功");
+    
     cancelCustomerEdit();
     await loadCustomerItems(); await loadCustomerQuoteReport(); await loadTripItems();
     return;
@@ -1250,7 +1250,7 @@ window.saveQuickTripItem=async function(){
   if(data?.id){document.getElementById("tripItem").value=String(data.id);previewTripPrice()}
   document.getElementById("quickItemName").value="";
   document.getElementById("quickItemModal").style.display="none";
-  alert("廠商新增成功，司機費請在本趟趟次中自行輸入。");
+  
 };
 
 

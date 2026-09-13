@@ -14,7 +14,7 @@
 <meta name="twitter:description" content="晨安企業｜內帳管理系統">
 <meta name="twitter:card" content="summary">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"></script>
@@ -553,6 +553,34 @@ let currentUser = null;
 let currentUserRole = null;
 let currentUserDisplayName = "";
 let currentUserMustChangePassword = false;
+
+
+function applyNotoSansHKToWorksheet(ws){
+  try{
+    ws.eachRow({includeEmpty:true}, row=>{
+      row.eachCell({includeEmpty:true}, cell=>{
+        const oldFont=cell.font||{};
+        cell.font={...oldFont,name:"Noto Sans HK"};
+      });
+    });
+  }catch(e){}
+}
+
+
+function applyNotoSansHKToSheetJS(ws){
+  try{
+    if(!ws || !ws["!ref"])return;
+    const range=XLSX.utils.decode_range(ws["!ref"]);
+    for(let R=range.s.r;R<=range.e.r;R++){
+      for(let C=range.s.c;C<=range.e.c;C++){
+        const addr=XLSX.utils.encode_cell({r:R,c:C});
+        if(!ws[addr])continue;
+        ws[addr].s=ws[addr].s||{};
+        ws[addr].s.font={...(ws[addr].s.font||{}),name:"Noto Sans HK"};
+      }
+    }
+  }catch(e){}
+}
 
 function money(value){
   return new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(value)||0);
@@ -1808,6 +1836,7 @@ window.exportCustomerQuoteExcel=function(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,"客戶報價成本");
   const name=(getSelectedReportCustomerName()==="全部客戶"?"全部客戶":getSelectedReportCustomerName()).replace(/[\\/:*?"<>|]/g,"_");
+  Object.values(wb.Sheets||{}).forEach(applyNotoSansHKToSheetJS);
   XLSX.writeFile(wb,`客戶報價成本報表_${name}_${currentMonth()}.xlsx`);
 };
 
@@ -1896,7 +1925,8 @@ window.exportDriverSettlementExcel=function(){
   ws['!cols']=[{wch:12},{wch:10},{wch:14},{wch:14},{wch:20},{wch:20},{wch:26},{wch:14},{wch:14},{wch:14}];
   const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"薪資結算");
   const driverFileName=`${yyyymm(d.month)}_${(d.driverName||"司機").replace(/[\/:*?"<>|]/g,"_")}`;
-   const out=XLSX.write(wb,{bookType:"xlsx",type:"array"});
+   const out=Object.values(wb.Sheets||{}).forEach(applyNotoSansHKToSheetJS);
+  XLSX.write(wb,{bookType:"xlsx",type:"array"});
    downloadBlob(new Blob([out],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),`${driverFileName}.xlsx`);
 };
 

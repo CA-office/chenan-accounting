@@ -220,6 +220,56 @@ input[type="number"]::-webkit-inner-spin-button{
 }
 </style>
 
+
+<style id="chenan-three-sticky-headers">
+/* 晨安企業：三個紀錄表格標題凍結（電腦版＋手機版） */
+#tripList,
+#driverSalarySettlementList,
+#quotationList{
+  position:relative;
+}
+
+/* 讓這三個 tbody 所在的 table-wrap 成為可捲動區塊 */
+.table-wrap:has(#tripList),
+.table-wrap:has(#driverSalarySettlementList),
+.table-wrap:has(#quotationList){
+  max-height:65vh;
+  overflow:auto;
+  position:relative;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* 凍結標題列 */
+.table-wrap:has(#tripList) thead th,
+.table-wrap:has(#driverSalarySettlementList) thead th,
+.table-wrap:has(#quotationList) thead th{
+  position:sticky;
+  top:0;
+  z-index:30;
+  background:#f5f7f8;
+  box-shadow:0 1px 0 #d9e0e6;
+}
+
+@media(max-width:700px){
+  .table-wrap:has(#tripList),
+  .table-wrap:has(#driverSalarySettlementList),
+  .table-wrap:has(#quotationList){
+    max-height:62vh;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .table-wrap:has(#tripList) thead th,
+  .table-wrap:has(#driverSalarySettlementList) thead th,
+  .table-wrap:has(#quotationList) thead th{
+    position:sticky!important;
+    top:0!important;
+    z-index:35!important;
+    background:#f5f7f8!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <div id="pullRefreshIndicator" aria-hidden="true"><div class="pull-spinner"></div></div>

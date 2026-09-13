@@ -1610,7 +1610,7 @@ window.editTrip=async function(id){
   document.getElementById("tripCancelBtn").style.display="block";
   document.getElementById("tripDriver").value=trip.employee_id;
   document.getElementById("tripDate").value=displayDate(trip.trip_date);
-  document.getElementById("tripTime").value=trip.trip_time||"";
+  document.getElementById("tripTime").value=String(trip.trip_time||"").slice(0,5);
    document.getElementById("tripFuel").value=Number(trip.fuel_cost||0);
   document.getElementById("tripVehicleBigCount").value=getVehicleBigFromNote(trip.note)||"";
   document.getElementById("tripVehicleSmallCount").value=getVehicleSmallFromNote(trip.note)||"";
@@ -2234,11 +2234,7 @@ async function loadBillingPreview(){
       vehicleSmall:getVehicleSmallFromNote(t.note),
       warehouseDays:getWarehouseDaysFromNote(t.note),
       groupCount:getGroupCountFromNote(t.note),
-      // 智哥請款單：趟次的「廠商＋地點」一起連動顯示，例如「虹偉雙北 進」、「艾森 撤」。
-      // 其他客戶維持原本顯示方式，避免影響既有請款格式。
-      area:String(t.customers?.name||"").includes("智哥")
-        ? [String(item.name||"").trim(), String(t.description||"").trim()].filter(Boolean).join(" ")
-        : (t.description||item.name||""),
+      area:t.description||item.name||"",
       amount:driverFee*qty,
       driverFee,
       driverAmount:driverFee*qty,

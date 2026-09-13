@@ -2234,7 +2234,11 @@ async function loadBillingPreview(){
       vehicleSmall:getVehicleSmallFromNote(t.note),
       warehouseDays:getWarehouseDaysFromNote(t.note),
       groupCount:getGroupCountFromNote(t.note),
-      area:t.description||item.name||"",
+      // 智哥請款單：趟次的「廠商＋地點」一起連動顯示，例如「虹偉雙北 進」、「艾森 撤」。
+      // 其他客戶維持原本顯示方式，避免影響既有請款格式。
+      area:String(t.customers?.name||"").includes("智哥")
+        ? [String(item.name||"").trim(), String(t.description||"").trim()].filter(Boolean).join(" ")
+        : (t.description||item.name||""),
       amount:driverFee*qty,
       driverFee,
       driverAmount:driverFee*qty,

@@ -392,10 +392,10 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
 <div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
-<div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
+<div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems();loadTripLocations();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
 <div class="form-field"><label for="tripDriverFeeInput">運費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟運費"></div>
-<div class="form-field"><label for="tripDescription">地點</label><input id="tripDescription" placeholder="例如：台北→新竹"></div>
+<div class="form-field"><label for="tripDescription">地點</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripDescription" onchange="syncLocationRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripLocationRemoveBtn" type="button" class="vendor-remove-btn" title="移除此地點" aria-label="移除此地點" onclick="removeSelectedTripLocation()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickLocationModal()">＋ 新增地點</button></div></div>
 <div class="form-field"><label for="tripDriverCash">收現</label><input id="tripDriverCash" type="number" min="0" step="1" value="0" placeholder="本趟司機代收現金"></div>
 </div>
 <div class="grid" style="margin-top:14px">
@@ -575,6 +575,7 @@ input[type="number"]::-webkit-inner-spin-button{
 </div></div>
 
 <div id="quickItemModal" class="modal-backdrop" onclick="closeQuickItemModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶廠商</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的廠商下拉選單，運費請在本趟趟次中自行輸入。</p><div class="form-field"><label for="quickItemName">廠商名稱</label><input id="quickItemName" placeholder="例如：拍貼機、撼動、五金"></div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickItemModal()">取消</button><button onclick="saveQuickTripItem()">新增廠商</button></div></div></div>
+<div id="quickLocationModal" class="modal-backdrop" onclick="closeQuickLocationModal(event)" style="display:none"><div class="modal" onclick="event.stopPropagation()"><h2>新增客戶地點</h2><p style="opacity:.7;margin-top:-4px">新增後會直接加入目前客戶的地點下拉選單，管理者與使用者、電腦與手機都會共用。</p><div class="form-field"><label for="quickLocationName">地點名稱</label><input id="quickLocationName" placeholder="例如：進、撤、台中、蘇澳港"></div><div class="actions" style="margin-top:8px"><button class="btn-secondary" onclick="closeQuickLocationModal()">取消</button><button onclick="saveQuickTripLocation()">新增地點</button></div></div></div>
 
 <div id="calendarDetailModal" class="modal-backdrop" onclick="closeCalendarDetail(event)"><div class="modal" onclick="event.stopPropagation()"><h2>趟次詳細資料</h2><div id="calendarDetailBody"></div><button class="btn-secondary" onclick="closeCalendarDetail()">關閉</button></div></div>
 
@@ -1407,6 +1408,105 @@ window.removeSelectedTripVendor=async function(){
   await loadTripItems();
 };
 
+
+const TRIP_LOCATION_PREFIX="__TRIP_LOCATION__::";
+
+function syncLocationRemoveButton(){
+  const select=document.getElementById("tripDescription");
+  const btn=document.getElementById("tripLocationRemoveBtn");
+  if(!select||!btn)return;
+  btn.disabled=!select.value;
+}
+
+window.openQuickLocationModal=function(){
+  const customerId=document.getElementById("tripCustomer")?.value||"";
+  if(!customerId){alert("請先選擇客戶，再新增這個客戶的地點。");return}
+  document.getElementById("quickLocationName").value="";
+  document.getElementById("quickLocationModal").style.display="flex";
+  setTimeout(()=>document.getElementById("quickLocationName")?.focus(),50);
+};
+window.closeQuickLocationModal=function(event){
+  if(event && event.target && event.target.id!=="quickLocationModal")return;
+  document.getElementById("quickLocationModal").style.display="none";
+};
+window.saveQuickTripLocation=async function(){
+  const customer_id=document.getElementById("tripCustomer")?.value||"";
+  const locationName=document.getElementById("quickLocationName")?.value.trim()||"";
+  if(!customer_id){alert("請先選擇客戶。");return}
+  if(!locationName){alert("請輸入地點名稱。");return}
+
+  const storedName=TRIP_LOCATION_PREFIX+locationName;
+  const {data:existing,error:checkError}=await client.from("customer_items")
+    .select("id,name")
+    .eq("customer_id",customer_id)
+    .eq("active",false)
+    .eq("name",storedName)
+    .maybeSingle();
+  if(checkError){alert("檢查地點失敗："+checkError.message);return}
+  if(existing){alert("這個客戶已經有相同的地點。");return}
+
+  const {error}=await client.from("customer_items").insert({
+    customer_id,name:storedName,customer_price:0,driver_fee:0,note:"地點下拉選單",active:false
+  });
+  if(error){alert("新增地點失敗："+error.message);return}
+
+  await loadTripLocations();
+  const select=document.getElementById("tripDescription");
+  if(select)select.value=locationName;
+  syncLocationRemoveButton();
+  document.getElementById("quickLocationName").value="";
+  document.getElementById("quickLocationModal").style.display="none";
+};
+
+window.removeSelectedTripLocation=async function(){
+  const select=document.getElementById("tripDescription");
+  const customerId=document.getElementById("tripCustomer")?.value||"";
+  const locationName=select?.value||"";
+  if(!customerId||!locationName){alert("請先選擇要移除的地點。");return}
+  if(!confirm(`確定要移除「${locationName}」嗎？`))return;
+
+  const storedName=TRIP_LOCATION_PREFIX+locationName;
+  const {error}=await client.from("customer_items")
+    .delete()
+    .eq("customer_id",customerId)
+    .eq("active",false)
+    .eq("name",storedName);
+  if(error){alert("移除地點失敗："+error.message);return}
+  await loadTripLocations();
+};
+
+window.loadTripLocations=async function(selectedValue=""){
+  const customerId=document.getElementById("tripCustomer")?.value||"";
+  const select=document.getElementById("tripDescription");
+  if(!select)return;
+  select.innerHTML=customerId?'<option value="">請選擇地點</option>':'<option value="">請先選擇客戶</option>';
+  syncLocationRemoveButton();
+  if(!customerId)return;
+
+  const {data,error}=await client.from("customer_items")
+    .select("id,name")
+    .eq("customer_id",customerId)
+    .eq("active",false)
+    .order("created_at",{ascending:true});
+  if(error){console.error(error);alert("地點讀取失敗："+error.message);return}
+
+  (data||[])
+    .filter(row=>String(row.name||"").startsWith(TRIP_LOCATION_PREFIX))
+    .map(row=>String(row.name).slice(TRIP_LOCATION_PREFIX.length))
+    .filter(Boolean)
+    .forEach(name=>{
+      const opt=document.createElement("option");
+      opt.value=name; opt.textContent=name; select.appendChild(opt);
+    });
+
+  if(selectedValue && !Array.from(select.options).some(o=>o.value===selectedValue)){
+    const opt=document.createElement("option");
+    opt.value=selectedValue; opt.textContent=selectedValue; select.appendChild(opt);
+  }
+  if(selectedValue)select.value=selectedValue;
+  syncLocationRemoveButton();
+};
+
 window.loadTripItems=async function(){
   const customerId=document.getElementById("tripCustomer").value;
   const select=document.getElementById("tripItem");
@@ -1620,11 +1720,12 @@ window.editTrip=async function(id){
   document.getElementById("tripGroupCount").value=getGroupCountFromNote(trip.note)||"";
   document.getElementById("tripCustomer").value=trip.customer_id;
   await loadTripItems();
+  await loadTripLocations(trip.description||"");
   document.getElementById("tripItem").value=trip.customer_item_id||"";
+  syncVendorRemoveButton();
   updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
   document.getElementById("tripDriverCash").value=Number(trip.driver_cash||0);
-  document.getElementById("tripDescription").value=trip.description||"";
   previewTripPrice();
   document.getElementById("trips").scrollIntoView({behavior:"smooth"});
 };
@@ -1638,7 +1739,8 @@ window.cancelTripEdit=function(){
   document.getElementById("tripTime").value="08:00";
   document.getElementById("tripCustomer").value="";
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
-    document.getElementById("tripDescription").value="";
+  document.getElementById("tripDescription").innerHTML='<option value="">請先選擇客戶</option>';
+  syncLocationRemoveButton();
   document.getElementById("tripDriverCash").value=0;
   document.getElementById("tripFuel").value=0;
   document.getElementById("tripVehicleBigCount").value="";

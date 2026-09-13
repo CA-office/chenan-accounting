@@ -448,9 +448,10 @@ input[type="number"]::-webkit-inner-spin-button{
 
 <div class="card">
 <h2>趟次紀錄</h2>
-<div class="grid" style="margin-bottom:14px">
+<div class="grid-3" style="margin-bottom:14px">
 <div class="form-field"><label for="tripRecordMonth">查詢月份</label><input id="tripRecordMonth" type="month" onchange="loadTrips()"></div>
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
+<div class="form-field"><label for="tripRecordDate">日期</label><input id="tripRecordDate" type="date" onchange="syncTripRecordDateFilter()"></div>
 </div>
 <div class="table-wrap"><table><thead><tr>
 <th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>台數</th><th>寄倉天數</th><th>組數</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>操作</th>
@@ -1000,6 +1001,7 @@ async function showApp(){
   document.getElementById("calendarDate").value=today();
   document.getElementById("tripMonth").value=currentMonth();
   const tripRecordMonth=document.getElementById("tripRecordMonth"); if(tripRecordMonth)tripRecordMonth.value=currentMonth();
+  const tripRecordDate=document.getElementById("tripRecordDate"); if(tripRecordDate)tripRecordDate.value="";
   document.getElementById("billDate").value=today();
   document.getElementById("billMonth").value=currentMonth();
   await Promise.all([loadTransactions(),loadEmployees(),loadCustomers(),loadQuotations()]);
@@ -1748,16 +1750,30 @@ window.applySalaryExclusions=async function(exclude){
   await loadTripSalaryPreview();
   await loadSalaryExclusionCustomersForMonth(month);
 };
+function syncTripRecordDateFilter(){
+  const date=document.getElementById("tripRecordDate")?.value||"";
+  const monthInput=document.getElementById("tripRecordMonth");
+  if(date && monthInput) monthInput.value=date.slice(0,7);
+  loadTrips();
+}
+
 async function loadTrips(){
   const month=document.getElementById("tripRecordMonth")?.value||currentMonth();
   const driverId=document.getElementById("tripRecordDriver")?.value||"";
+  const recordDate=document.getElementById("tripRecordDate")?.value||"";
   const {start,next}=monthRange(month);
   let query=client.from("driver_trips").select(`
     *,
     employees(name),
     customers(name),
     customer_items(name)
-  `).gte("trip_date",start).lt("trip_date",next).order("trip_date",{ascending:false}).order("id",{ascending:false});
+  `);
+  if(recordDate){
+    query=query.eq("trip_date",recordDate);
+  }else{
+    query=query.gte("trip_date",start).lt("trip_date",next);
+  }
+  query=query.order("trip_date",{ascending:false}).order("id",{ascending:false});
   if(driverId)query=query.eq("employee_id",driverId);
   const {data,error}=await query;
   if(error){console.error(error);return}
@@ -1775,7 +1791,7 @@ async function loadTrips(){
     row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(groupText)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
-  if(!window._tripCache.length)list.innerHTML='<tr><td colspan="13">這個月份目前沒有趟次紀錄</td></tr>';
+  if(!window._tripCache.length)list.innerHTML=`<tr><td colspan="13">${recordDate?"這個日期目前沒有趟次紀錄":"這個月份目前沒有趟次紀錄"}</td></tr>`;
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
   await loadTripRecordSalaryExclusionCustomers();

@@ -395,7 +395,7 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems();loadTripLocations();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
 <div class="form-field"><label for="tripDriverFeeInput">運費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟運費"></div>
-<div class="form-field"><label for="tripDescription">地點</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripDescription" onchange="syncLocationRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripLocationRemoveBtn" type="button" class="vendor-remove-btn" title="移除此地點" aria-label="移除此地點" onclick="removeSelectedTripLocation()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickLocationModal()">＋ 新增地點</button></div></div>
+<div class="form-field"><label for="tripDescription">地點</label><div class="select-with-action"><div class="vendor-select-inline"><input id="tripDescription" list="tripDescriptionList" type="text" placeholder="可直接輸入或選擇地點" autocomplete="off" oninput="syncLocationRemoveButton()"><datalist id="tripDescriptionList"></datalist><button id="tripLocationRemoveBtn" type="button" class="vendor-remove-btn" title="移除此地點" aria-label="移除此地點" onclick="removeSelectedTripLocation()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickLocationModal()">＋ 新增地點</button></div></div>
 <div class="form-field"><label for="tripDriverCash">收現</label><input id="tripDriverCash" type="number" min="0" step="1" value="0" placeholder="本趟司機代收現金"></div>
 </div>
 <div class="grid" style="margin-top:14px">
@@ -1477,9 +1477,12 @@ window.removeSelectedTripLocation=async function(){
 
 window.loadTripLocations=async function(selectedValue=""){
   const customerId=document.getElementById("tripCustomer")?.value||"";
-  const select=document.getElementById("tripDescription");
-  if(!select)return;
-  select.innerHTML=customerId?'<option value="">請選擇地點</option>':'<option value="">請先選擇客戶</option>';
+  const input=document.getElementById("tripDescription");
+  const list=document.getElementById("tripDescriptionList");
+  if(!input||!list)return;
+  list.innerHTML="";
+  input.placeholder=customerId?"可直接輸入或選擇地點":"請先選擇客戶";
+  if(!selectedValue) input.value="";
   syncLocationRemoveButton();
   if(!customerId)return;
 
@@ -1496,14 +1499,10 @@ window.loadTripLocations=async function(selectedValue=""){
     .filter(Boolean)
     .forEach(name=>{
       const opt=document.createElement("option");
-      opt.value=name; opt.textContent=name; select.appendChild(opt);
+      opt.value=name; list.appendChild(opt);
     });
 
-  if(selectedValue && !Array.from(select.options).some(o=>o.value===selectedValue)){
-    const opt=document.createElement("option");
-    opt.value=selectedValue; opt.textContent=selectedValue; select.appendChild(opt);
-  }
-  if(selectedValue)select.value=selectedValue;
+  if(selectedValue)input.value=selectedValue;
   syncLocationRemoveButton();
 };
 

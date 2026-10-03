@@ -182,16 +182,13 @@ th{background:#f5f7f8}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
 
-.billing-preview-shell{position:relative;max-width:1120px;margin:auto;padding-right:0}
+.billing-preview-shell{max-width:1120px;margin:auto}
 .billing-preview-shell .billing-paper{margin:0;max-width:980px}
-.billing-preview-actions{position:absolute;right:0;top:132px;width:120px;display:flex;flex-direction:column;gap:10px}
-.billing-preview-actions button{margin:0;width:100%;padding:10px 12px}
-.billing-preview-actions[hidden]{display:none!important}
 @media(max-width:900px){
   .billing-preview-shell{padding-right:0}
   .billing-preview-shell .billing-paper{margin:auto}
-  .billing-preview-actions{position:static;width:100%;flex-direction:row;margin-top:10px}
-  .billing-preview-actions button{flex:1}
+  
+  
 }
 
 @media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 70px 0 108px}.billing-logo{left:24px;top:8px;width:88px;height:88px;max-width:88px;max-height:88px}.billing-head h1{font-size:22px;letter-spacing:4px;white-space:nowrap;word-break:keep-all;overflow:visible}.billing-head h2{font-size:19px;letter-spacing:5px;white-space:nowrap;word-break:keep-all}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
@@ -2555,14 +2552,7 @@ window.downloadBillingPDF=async function(){
   const month=billingPreviewData.month||currentMonth();
   const driverName=((billingPreviewData.rows||[]).find(r=>r.driver)?.driver||"司機").replace(/[\/:*?"<>|]/g,"_");
   const billingFileName=`${yyyymm(month)}_${driverName}`;
-  const controls=[...document.querySelectorAll(".no-export")];
-  const oldDisplays=controls.map(el=>el.style.display);
-  controls.forEach(el=>el.style.display="none");
-  try{
-    await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
-  }finally{
-    controls.forEach((el,i)=>el.style.display=oldDisplays[i]);
-  }
+  await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
 };
 window.downloadBillingExcel=async function(){
   if(!billingPreviewData){alert("請先選擇客戶");return}

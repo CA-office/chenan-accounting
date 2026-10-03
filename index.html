@@ -45,6 +45,7 @@ button:hover{opacity:.9}
 @media(max-width:600px){.select-with-action{flex-direction:column}.quick-add-item-btn{width:100%;min-height:44px}}
 
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.trip-record-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .summary-box{padding:18px;border-radius:14px;background:#eceff1;text-align:center}
 .summary-box strong{display:block;font-size:22px;margin-top:5px}
@@ -69,8 +70,8 @@ th{background:#f5f7f8}
 .user-email{color:#64748b;font-size:13px}
 .logout-top{width:auto!important;margin:0!important;padding:7px 12px!important;font-size:13px!important}
 #app{display:none}
-@media(max-width:800px){.summary,.grid-3{grid-template-columns:repeat(2,1fr)}.tabs{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:600px){.grid,.summary,.grid-3{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){.summary,.grid-3,.trip-record-filters{grid-template-columns:repeat(2,1fr)}.tabs{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.grid,.summary,.grid-3,.trip-record-filters{grid-template-columns:1fr}.tabs{grid-template-columns:repeat(2,1fr)}}
 
 /* 左側管理選單 */
 .app-layout{display:flex;gap:18px;align-items:flex-start}
@@ -448,9 +449,10 @@ input[type="number"]::-webkit-inner-spin-button{
 
 <div class="card">
 <h2>趟次紀錄</h2>
-<div class="grid-3" style="margin-bottom:14px">
+<div class="trip-record-filters" style="margin-bottom:14px">
 <div class="form-field"><label for="tripRecordMonth">查詢月份</label><input id="tripRecordMonth" type="month" onchange="loadTrips()"></div>
 <div class="form-field"><label for="tripRecordDriver">選擇司機</label><select id="tripRecordDriver" onchange="loadTrips()"><option value="">全部司機</option></select></div>
+<div class="form-field"><label for="tripRecordCustomer">選擇客戶</label><select id="tripRecordCustomer" onchange="loadTrips()"><option value="">全部客戶</option></select></div>
 <div class="form-field"><label for="tripRecordDate">日期</label><input id="tripRecordDate" type="date" onchange="syncTripRecordDateFilter()"></div>
 </div>
 <div class="table-wrap"><table><thead><tr>
@@ -1282,8 +1284,11 @@ async function loadCustomers(){
   customers=data||[];
   const combined=document.getElementById("combinedCustomer");
   const tripCustomer=document.getElementById("tripCustomer");
+  const tripRecordCustomer=document.getElementById("tripRecordCustomer");
+  const currentTripRecordCustomer=tripRecordCustomer?.value||"";
   if(combined)combined.innerHTML='<option value="">新增客戶（請填寫下方公司抬頭）</option>';
   if(tripCustomer)tripCustomer.innerHTML='<option value="">請選擇客戶</option>';
+  if(tripRecordCustomer)tripRecordCustomer.innerHTML='<option value="">全部客戶</option>';
   const reportCustomer=document.getElementById("reportCustomer");
   if(reportCustomer)reportCustomer.innerHTML='<option value="">全部客戶</option>';
   const list=document.getElementById("customerList");
@@ -1298,10 +1303,14 @@ async function loadCustomers(){
       if(!select)return;
       const opt=document.createElement("option"); opt.value=customer.id; opt.textContent=customer.name; select.appendChild(opt);
     });
+    if(tripRecordCustomer){
+      const tro=document.createElement("option"); tro.value=customer.id; tro.textContent=customer.name; tripRecordCustomer.appendChild(tro);
+    }
     if(reportCustomer){
       const ro=document.createElement("option"); ro.value=customer.id; ro.textContent=customer.name; reportCustomer.appendChild(ro);
     }
   });
+  if(tripRecordCustomer && currentTripRecordCustomer) tripRecordCustomer.value=currentTripRecordCustomer;
   renderTripSettlementDriverFilter();
   updateSpecialTripFields();
 }
@@ -1893,6 +1902,7 @@ function syncTripRecordDateFilter(){
 async function loadTrips(){
   const month=document.getElementById("tripRecordMonth")?.value||currentMonth();
   const driverId=document.getElementById("tripRecordDriver")?.value||"";
+  const customerId=document.getElementById("tripRecordCustomer")?.value||"";
   const recordDate=document.getElementById("tripRecordDate")?.value||"";
   const {start,next}=monthRange(month);
   let query=client.from("driver_trips").select(`
@@ -1908,6 +1918,7 @@ async function loadTrips(){
   }
   query=query.order("trip_date",{ascending:true}).order("trip_time",{ascending:true}).order("id",{ascending:true});
   if(driverId)query=query.eq("employee_id",driverId);
+  if(customerId)query=query.eq("customer_id",customerId);
   const {data,error}=await query;
   if(error){console.error(error);return}
   window._tripCache=data||[];

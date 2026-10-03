@@ -2123,7 +2123,7 @@ async function exportElementToPDF(elementId, filename, orientation="landscape"){
     ctx.drawImage(canvas,0,offsetY,canvas.width,sliceH,0,0,canvas.width,sliceH);
     const imgH=sliceH/pxPerMm;
     if(page>0)pdf.addPage();
-    pdf.addImage(slice.toDataURL("image/png"),"PNG",margin,margin,imgW,imgH,"FAST");
+    pdf.addImage(slice.toDataURL("image/png"),"PNG",margin,margin,imgW,imgH,undefined,"FAST");
     offsetY+=sliceH;
     page++;
   }
@@ -2549,10 +2549,52 @@ async function deleteBillingInvoice(id){
 window.downloadBillingPDF=async function(){
   if(!billingPreviewData){await loadBillingPreview();}
   if(!billingPreviewData)return;
+
   const month=billingPreviewData.month||currentMonth();
-  const customerName=String(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
+  const customerName=String(billingPreviewData.customer?.name||"客戶").replace(/[\/:*?"<>|]/g,"_");
   const billingFileName=`${yyyymm(month)}_${customerName}`;
-  await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
+
+  const el=document.getElementById("billingPreview");
+  if(!el)return alert("找不到請款單預覽");
+
+  // 等待字型與圖片完成，確保 Logo 與最底部「總計」都被擷取。
+  if(document.fonts?.ready){try{await document.fonts.ready;}catch(e){}}
+  const imgs=[...el.querySelectorAll("img")];
+  await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(r=>{
+    img.addEventListener("load",r,{once:true});
+    img.addEventListener("error",r,{once:true});
+  })));
+
+  const canvas=await html2canvas(el,{
+    scale:2,
+    useCORS:true,
+    backgroundColor:"#ffffff",
+    scrollX:0,
+    scrollY:0,
+    width:el.scrollWidth,
+    height:el.scrollHeight,
+    windowWidth:Math.max(document.documentElement.clientWidth,el.scrollWidth),
+    windowHeight:Math.max(document.documentElement.clientHeight,el.scrollHeight)
+  });
+
+  const {jsPDF}=window.jspdf;
+  // 固定 A4 直式一頁，完整內容等比例縮放，不裁切、不分頁。
+  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4",compress:true});
+  const pageW=pdf.internal.pageSize.getWidth();
+  const pageH=pdf.internal.pageSize.getHeight();
+  const margin=5;
+  const maxW=pageW-margin*2;
+  const maxH=pageH-margin*2;
+
+  const ratio=Math.min(maxW/canvas.width,maxH/canvas.height);
+  const drawW=canvas.width*ratio;
+  const drawH=canvas.height*ratio;
+  const x=(pageW-drawW)/2;
+  const y=(pageH-drawH)/2;
+
+  const imgData=canvas.toDataURL("image/jpeg",0.96);
+  pdf.addImage(imgData,"JPEG",x,y,drawW,drawH,undefined,"FAST");
+  pdf.save(`${billingFileName}.pdf`);
 };
 window.downloadBillingExcel=async function(){
   if(!billingPreviewData){await loadBillingPreview();}

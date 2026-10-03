@@ -2414,7 +2414,8 @@ async function loadBillingPreview(){
       vehicleType:normalizeVehicleTypeInput(getVehicleTypeFromNote(t.note)),
       // 請款單只顯示地點，不顯示廠商名稱
       area:String(t.description||"").trim(),
-      amount:Number(t.freight||0),
+      // 與「趟次紀錄」畫面顯示的運費完全相同：每趟單價 × 數量
+      amount:Number(t.driver_fee||0)*qty,
       driverFee,
       driverAmount:driverFee*qty,
       note:stripVehicleMarker(t.note||""),

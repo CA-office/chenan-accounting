@@ -2547,11 +2547,11 @@ async function deleteBillingInvoice(id){
   await loadQuotations();
 }
 window.downloadBillingPDF=async function(){
-  if(!billingPreviewData) {await loadBillingPreview();}
-  if(!billingPreviewData){return}
-  const name=(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
+  if(!billingPreviewData){await loadBillingPreview();}
+  if(!billingPreviewData)return;
   const month=billingPreviewData.month||currentMonth();
-  const billingFileName=`${yyyymm(month)}_${name}`;
+  const customerName=String(billingPreviewData.customer?.name||"客戶").replace(/[\\/:*?"<>|]/g,"_");
+  const billingFileName=`${yyyymm(month)}_${customerName}`;
   await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
 };
 window.downloadBillingExcel=async function(){

@@ -182,7 +182,7 @@ th{background:#f5f7f8}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
 
-.billing-preview-shell{position:relative;max-width:1120px;margin:auto;padding-right:140px}
+.billing-preview-shell{position:relative;max-width:1120px;margin:auto;padding-right:0}
 .billing-preview-shell .billing-paper{margin:0;max-width:980px}
 .billing-preview-actions{position:absolute;right:0;top:132px;width:120px;display:flex;flex-direction:column;gap:10px}
 .billing-preview-actions button{margin:0;width:100%;padding:10px 12px}
@@ -565,10 +565,6 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="billing-preview-shell">
 <div id="billingPreview" class="billing-paper">
   <div class="billing-empty">請先選擇客戶與月份</div>
-</div>
-<div id="billingPreviewActions" class="billing-preview-actions no-export" hidden>
-  <button type="button" class="btn-secondary" onclick="modifyBillingFromPreview()">修改</button>
-  <button type="button" class="btn-danger" onclick="deleteBillingFromPreview()">刪除</button>
 </div>
 </div>
 </div>
@@ -2416,8 +2412,8 @@ async function loadBillingPreview(){
       warehouseDays:getWarehouseDaysFromNote(t.note),
       groupCount:getGroupCountFromNote(t.note),
       vehicleType:normalizeVehicleTypeInput(getVehicleTypeFromNote(t.note)),
-      // 所有客戶的請款單「運送廠商／地點」一律顯示：廠商 + 地點
-      area:[item.name||"", t.description||""].map(v=>String(v).trim()).filter(Boolean).join(" "),
+      // 請款單只顯示地點，不顯示廠商名稱
+      area:String(t.description||"").trim(),
       amount:driverFee*qty,
       driverFee,
       driverAmount:driverFee*qty,
@@ -2428,38 +2424,6 @@ async function loadBillingPreview(){
   });
   renderBillingPreview();
 }
-function syncBillingPreviewActions(){
-  const box=document.getElementById("billingPreviewActions");
-  if(!box)return;
-  box.hidden=!billingPreviewData;
-}
-window.modifyBillingFromPreview=function(){
-  if(!billingPreviewData){alert("目前沒有可修改的請款單預覽。");return}
-  const form=document.getElementById("billCustomer");
-  if(form){
-    form.scrollIntoView({behavior:"smooth",block:"center"});
-    setTimeout(()=>form.focus(),350);
-  }
-};
-window.deleteBillingFromPreview=async function(){
-  if(!billingPreviewData){alert("目前沒有可刪除的請款單預覽。");return}
-  if(!confirm("確定要刪除這張請款單嗎？"))return;
-
-  if(editingBillingInvoiceId){
-    const id=editingBillingInvoiceId;
-    const {error}=await client.from("quotations").delete().eq("id",id);
-    if(error){alert("刪除失敗："+error.message);return}
-    cancelBillingEdit();
-    await loadQuotations();
-  }
-
-  billingRows=[];
-  billingPreviewData=null;
-  const preview=document.getElementById("billingPreview");
-  if(preview)preview.innerHTML='<div class="billing-empty">請先選擇客戶與月份</div>';
-  syncBillingPreviewActions();
-};
-
 function renderBillingPreview(){
   const c=getBillingCustomer();
   const month=document.getElementById("billMonth")?.value||"";
@@ -2500,7 +2464,7 @@ function renderBillingPreview(){
       <div>日期：${safe(date)}</div>
     </div>
     <table>
-      <thead><tr><th>項次</th><th>日期</th>${showQty?"<th>台數</th>":""}${showWarehouse?"<th>寄倉天數</th>":""}${showVehicleType?"<th>噸數</th>":""}<th>運送廠商／地點</th>${showWarehouse?"<th>組數</th>":""}<th>金額</th></tr></thead>
+      <thead><tr><th>項次</th><th>日期</th>${showQty?"<th>台數</th>":""}${showWarehouse?"<th>寄倉天數</th>":""}${showVehicleType?"<th>噸數</th>":""}<th>地點</th>${showWarehouse?"<th>組數</th>":""}<th>金額</th></tr></thead>
       <tbody>${rows}</tbody>
       <tr class="billing-total"><td colspan="${billingColCount-1}">小計</td><td class="money">${money(subtotal)}</td></tr>
       <tr class="billing-total"><td colspan="${billingColCount-1}">${rate}% 營業稅</td><td class="money">${money(tax)}</td></tr>
@@ -2509,7 +2473,6 @@ function renderBillingPreview(){
     ${payment?`<div class="billing-footer"><strong>付款方式：</strong>${safe(payment)}</div>`:""}
     ${note?`<div class="billing-footer"><strong>備註：</strong>${safe(note)}</div>`:""}
   `;
-  syncBillingPreviewActions();
 }
 ["billDate","billTaxRate","billPayment","billNote"].forEach(id=>{
   document.addEventListener("input",e=>{if(e.target && e.target.id===id && billingRows.length>=0)renderBillingPreview()});
@@ -2576,7 +2539,6 @@ window.cancelBillingEdit=function(){
   editingBillingInvoiceId=null;
   const btn=document.getElementById("billingSaveBtn"); if(btn)btn.textContent="儲存請款單";
   const cancel=document.getElementById("billingCancelBtn"); if(cancel)cancel.style.display="none";
-  syncBillingPreviewActions();
 };
 window.viewSavedBilling=editSavedBilling;
 async function deleteBillingInvoice(id){
@@ -2637,7 +2599,7 @@ window.downloadBillingExcel=async function(){
   ws.getCell("A4").value="請款月份："+monthLabel(d.month);
   ws.mergeCells("A3:B3"); ws.mergeCells("C3:D3"); ws.mergeCells("E3:F3"); ws.mergeCells("A4:F4");
   ["A3","C3","E3","A4"].forEach(c=>{ws.getCell(c).font={bold:true,size:11};});
-  const headerRow=ws.addRow(showQty?["項次","日期","台數","運送廠商／地點","金額"]:showWarehouse?["項次","日期","寄倉天數","運送廠商／地點","組數","金額"]:showVehicleType?["項次","日期","噸數","運送廠商／地點","金額"]:["項次","日期","運送廠商／地點","金額"]);
+  const headerRow=ws.addRow(showQty?["項次","日期","台數","地點","金額"]:showWarehouse?["項次","日期","寄倉天數","地點","組數","金額"]:showVehicleType?["項次","日期","噸數","地點","金額"]:["項次","日期","地點","金額"]);
   headerRow.eachCell(cell=>{cell.font={bold:true,color:{argb:"FFFFFFFF"}};cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF58718B"}};cell.alignment={horizontal:"center",vertical:"middle"};cell.border={top:{style:"thin"},left:{style:"thin"},bottom:{style:"thin"},right:{style:"thin"}};});
   d.rows.forEach((r,i)=>{
     const row=ws.addRow(showQty?[i+1,formatBillDate(r.date),formatVehicleCount(r.vehicleBig,r.vehicleSmall),r.area,r.amount]:showWarehouse?[i+1,formatBillDate(r.date),Number(r.warehouseDays||0)?String(r.warehouseDays)+"天":"",r.area,Number(r.groupCount||0)||"",r.amount]:showVehicleType?[i+1,formatBillDate(r.date),formatVehicleTypeTons(r.vehicleType),r.area,r.amount]:[i+1,formatBillDate(r.date),r.area,r.amount]);

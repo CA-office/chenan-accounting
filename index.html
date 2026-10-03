@@ -2431,10 +2431,10 @@ async function loadBillingPreview(){
 function syncBillingPreviewActions(){
   const box=document.getElementById("billingPreviewActions");
   if(!box)return;
-  box.hidden=!editingBillingInvoiceId;
+  box.hidden=!billingPreviewData;
 }
 window.modifyBillingFromPreview=function(){
-  if(!editingBillingInvoiceId){alert("請先從「請款單紀錄」開啟要修改的請款單。");return}
+  if(!billingPreviewData){alert("目前沒有可修改的請款單預覽。");return}
   const form=document.getElementById("billCustomer");
   if(form){
     form.scrollIntoView({behavior:"smooth",block:"center"});
@@ -2442,18 +2442,22 @@ window.modifyBillingFromPreview=function(){
   }
 };
 window.deleteBillingFromPreview=async function(){
-  if(!editingBillingInvoiceId){alert("請先從「請款單紀錄」開啟要刪除的請款單。");return}
-  const id=editingBillingInvoiceId;
+  if(!billingPreviewData){alert("目前沒有可刪除的請款單預覽。");return}
   if(!confirm("確定要刪除這張請款單嗎？"))return;
-  const {error}=await client.from("quotations").delete().eq("id",id);
-  if(error){alert("刪除失敗："+error.message);return}
-  cancelBillingEdit();
+
+  if(editingBillingInvoiceId){
+    const id=editingBillingInvoiceId;
+    const {error}=await client.from("quotations").delete().eq("id",id);
+    if(error){alert("刪除失敗："+error.message);return}
+    cancelBillingEdit();
+    await loadQuotations();
+  }
+
   billingRows=[];
   billingPreviewData=null;
   const preview=document.getElementById("billingPreview");
   if(preview)preview.innerHTML='<div class="billing-empty">請先選擇客戶與月份</div>';
   syncBillingPreviewActions();
-  await loadQuotations();
 };
 
 function renderBillingPreview(){

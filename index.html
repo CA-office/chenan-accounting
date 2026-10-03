@@ -181,6 +181,19 @@ th{background:#f5f7f8}
 .billing-paper .money{text-align:right;white-space:nowrap}
 .billing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .billing-actions button{width:auto;margin:0}
+
+.billing-preview-shell{position:relative;max-width:1120px;margin:auto;padding-right:140px}
+.billing-preview-shell .billing-paper{margin:0;max-width:980px}
+.billing-preview-actions{position:absolute;right:0;top:132px;width:120px;display:flex;flex-direction:column;gap:10px}
+.billing-preview-actions button{margin:0;width:100%;padding:10px 12px}
+.billing-preview-actions[hidden]{display:none!important}
+@media(max-width:900px){
+  .billing-preview-shell{padding-right:0}
+  .billing-preview-shell .billing-paper{margin:auto}
+  .billing-preview-actions{position:static;width:100%;flex-direction:row;margin-top:10px}
+  .billing-preview-actions button{flex:1}
+}
+
 @media(max-width:700px){.billing-paper{padding:14px}.billing-head{min-height:112px;padding:0 70px 0 108px}.billing-logo{left:24px;top:8px;width:88px;height:88px;max-width:88px;max-height:88px}.billing-head h1{font-size:22px;letter-spacing:4px;white-space:nowrap;word-break:keep-all;overflow:visible}.billing-head h2{font-size:19px;letter-spacing:5px;white-space:nowrap;word-break:keep-all}.billing-paper table{font-size:12px}.billing-paper th,.billing-paper th,.billing-paper td{padding:6px 4px}}
 .salary-exclusion-box .checkbox-grid{display:flex !important;flex-direction:column !important;gap:8px !important;width:100%;}
 .salary-exclusion-box .checkbox-grid > label{display:flex !important;align-items:center !important;width:100% !important;min-width:0 !important;white-space:nowrap !important;overflow:hidden !important;}
@@ -549,8 +562,14 @@ input[type="number"]::-webkit-inner-spin-button{
 
 <div class="card">
 <h2>請款單預覽</h2>
+<div class="billing-preview-shell">
 <div id="billingPreview" class="billing-paper">
   <div class="billing-empty">請先選擇客戶與月份</div>
+</div>
+<div id="billingPreviewActions" class="billing-preview-actions no-export" hidden>
+  <button type="button" class="btn-secondary" onclick="modifyBillingFromPreview()">修改</button>
+  <button type="button" class="btn-danger" onclick="deleteBillingFromPreview()">刪除</button>
+</div>
 </div>
 </div>
 
@@ -2409,6 +2428,34 @@ async function loadBillingPreview(){
   });
   renderBillingPreview();
 }
+function syncBillingPreviewActions(){
+  const box=document.getElementById("billingPreviewActions");
+  if(!box)return;
+  box.hidden=!editingBillingInvoiceId;
+}
+window.modifyBillingFromPreview=function(){
+  if(!editingBillingInvoiceId){alert("請先從「請款單紀錄」開啟要修改的請款單。");return}
+  const form=document.getElementById("billCustomer");
+  if(form){
+    form.scrollIntoView({behavior:"smooth",block:"center"});
+    setTimeout(()=>form.focus(),350);
+  }
+};
+window.deleteBillingFromPreview=async function(){
+  if(!editingBillingInvoiceId){alert("請先從「請款單紀錄」開啟要刪除的請款單。");return}
+  const id=editingBillingInvoiceId;
+  if(!confirm("確定要刪除這張請款單嗎？"))return;
+  const {error}=await client.from("quotations").delete().eq("id",id);
+  if(error){alert("刪除失敗："+error.message);return}
+  cancelBillingEdit();
+  billingRows=[];
+  billingPreviewData=null;
+  const preview=document.getElementById("billingPreview");
+  if(preview)preview.innerHTML='<div class="billing-empty">請先選擇客戶與月份</div>';
+  syncBillingPreviewActions();
+  await loadQuotations();
+};
+
 function renderBillingPreview(){
   const c=getBillingCustomer();
   const month=document.getElementById("billMonth")?.value||"";
@@ -2458,6 +2505,7 @@ function renderBillingPreview(){
     ${payment?`<div class="billing-footer"><strong>付款方式：</strong>${safe(payment)}</div>`:""}
     ${note?`<div class="billing-footer"><strong>備註：</strong>${safe(note)}</div>`:""}
   `;
+  syncBillingPreviewActions();
 }
 ["billDate","billTaxRate","billPayment","billNote"].forEach(id=>{
   document.addEventListener("input",e=>{if(e.target && e.target.id===id && billingRows.length>=0)renderBillingPreview()});
@@ -2524,6 +2572,7 @@ window.cancelBillingEdit=function(){
   editingBillingInvoiceId=null;
   const btn=document.getElementById("billingSaveBtn"); if(btn)btn.textContent="儲存請款單";
   const cancel=document.getElementById("billingCancelBtn"); if(cancel)cancel.style.display="none";
+  syncBillingPreviewActions();
 };
 window.viewSavedBilling=editSavedBilling;
 async function deleteBillingInvoice(id){
@@ -2539,7 +2588,14 @@ window.downloadBillingPDF=async function(){
   const month=billingPreviewData.month||currentMonth();
   const driverName=((billingPreviewData.rows||[]).find(r=>r.driver)?.driver||"司機").replace(/[\/:*?"<>|]/g,"_");
   const billingFileName=`${yyyymm(month)}_${driverName}`;
-   await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
+  const controls=[...document.querySelectorAll(".no-export")];
+  const oldDisplays=controls.map(el=>el.style.display);
+  controls.forEach(el=>el.style.display="none");
+  try{
+    await exportElementToPDF("billingPreview",`${billingFileName}.pdf`,"portrait");
+  }finally{
+    controls.forEach((el,i)=>el.style.display=oldDisplays[i]);
+  }
 };
 window.downloadBillingExcel=async function(){
   if(!billingPreviewData){alert("請先選擇客戶");return}

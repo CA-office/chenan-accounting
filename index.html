@@ -282,7 +282,15 @@ input[type="number"]::-webkit-inner-spin-button{
 }
 </style>
 
-</head>
+<style id="quick-trip-search-style">
+.quick-search-original{display:none!important}
+.quick-search-box{position:relative;flex:1;min-width:0}
+.quick-search-box input{width:100%;margin:0}
+.quick-search-results{display:none;position:absolute;top:100%;left:0;right:0;z-index:1100;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 20px #0002;max-height:230px;overflow:auto}
+.quick-search-results.open{display:block}
+.quick-search-choice{display:block;width:100%;text-align:left;padding:11px 13px;margin:0;border:0;border-radius:0;background:white;color:#263238;font-weight:400}
+.quick-search-choice:hover,.quick-search-choice.active{background:#e4f3f8}
+</style></head>
 <body>
 <div id="pullRefreshIndicator" aria-hidden="true"><div class="pull-spinner"></div></div>
 
@@ -404,8 +412,8 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
 <div class="form-field" style="display:none" aria-hidden="true"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
-<div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems();loadTripLocations();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
-<div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
+<div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" class="quick-search-original" onchange="loadTripItems();loadTripLocations();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
+<div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" class="quick-search-original" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
 <div class="form-field"><label for="tripDriverFeeInput">運費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟運費"></div>
 <div class="form-field"><label for="tripDescription">地點</label><div class="select-with-action"><div class="vendor-select-inline"><input id="tripDescription" list="tripDescriptionList" type="text" placeholder="可直接輸入或選擇地點" autocomplete="off" oninput="syncLocationRemoveButton()"><datalist id="tripDescriptionList"></datalist><button id="tripLocationRemoveBtn" type="button" class="vendor-remove-btn" title="移除此地點" aria-label="移除此地點" onclick="removeSelectedTripLocation()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickLocationModal()">＋ 新增地點</button></div></div>
 <div class="form-field"><label for="tripDriverCash">收現</label><input id="tripDriverCash" type="number" min="0" step="1" value="0" placeholder="本趟司機代收現金"></div>
@@ -1785,9 +1793,11 @@ window.editTrip=async function(id){
   document.getElementById("tripVehicleType").value=normalizeVehicleTypeInput(getVehicleTypeFromNote(trip.note)||"");
   document.getElementById("tripRemark").value=getTripRemarkFromNote(trip.note)||"";
   document.getElementById("tripCustomer").value=trip.customer_id;
+  syncTripCustomerQuickSearch();
   await loadTripItems();
   await loadTripLocations(trip.description||"");
   document.getElementById("tripItem").value=trip.customer_item_id||"";
+  syncTripItemQuickSearch();
   syncVendorRemoveButton();
   updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
@@ -1804,6 +1814,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripDate").value=displayDate(today());
   document.getElementById("tripTime").value="08:00";
   document.getElementById("tripCustomer").value="";
+  syncTripCustomerQuickSearch();
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
   document.getElementById("tripDescription").innerHTML='<option value="">請先選擇客戶</option>';
   syncLocationRemoveButton();
@@ -2828,7 +2839,72 @@ document.addEventListener("keydown", function(event){
   },{passive:true});
 })();
 </script>
-</body>
+<script id="quick-trip-search-script">
+(function(){
+ const ids=['tripCustomer','tripItem'];
+ function setup(id){
+  const sel=document.getElementById(id);
+  if(!sel||document.getElementById(id+'Search'))return;
+  const box=document.createElement('div');box.className='quick-search-box';
+  const input=document.createElement('input');input.id=id+'Search';input.type='text';input.autocomplete='off';
+  input.placeholder=id==='tripCustomer'?'輸入客戶關鍵字搜尋':'輸入廠商關鍵字搜尋';
+  const results=document.createElement('div');results.className='quick-search-results';
+  box.append(input,results);sel.parentNode.insertBefore(box,sel);
+  let matches=[],cursor=0;
+  function close(){results.classList.remove('open')}
+  function refresh(){
+   const q=input.value.trim().toLocaleLowerCase();
+   matches=Array.from(sel.options).filter(o=>o.value&&o.textContent.toLocaleLowerCase().includes(q));
+   results.replaceChildren();cursor=0;
+   matches.forEach((o,i)=>{
+    const b=document.createElement('button');b.type='button';b.className='quick-search-choice'+(i===0?' active':'');
+    b.textContent=o.textContent;
+    b.addEventListener('mousedown',e=>e.preventDefault());
+    b.addEventListener('click',()=>choose(o));
+    results.appendChild(b);
+   });
+   if(!matches.length){const d=document.createElement('div');d.textContent='找不到符合的選項';d.style.padding='12px';results.appendChild(d)}
+   results.classList.add('open');
+  }
+  function choose(o){
+   sel.value=o.value;input.value=o.textContent;close();
+   sel.dispatchEvent(new Event('change',{bubbles:true}));
+   if(id==='tripCustomer'){
+    const item=document.getElementById('tripItemSearch');
+    if(item)item.value='';
+   }
+  }
+  input.addEventListener('focus',refresh);
+  input.addEventListener('input',refresh);
+  input.addEventListener('keydown',e=>{
+   if(e.key==='Escape'){close();return}
+   if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+    e.preventDefault();cursor=Math.max(0,Math.min(matches.length-1,cursor+(e.key==='ArrowDown'?1:-1)));
+    [...results.children].forEach((el,i)=>el.classList.toggle('active',i===cursor));
+    results.children[cursor]?.scrollIntoView({block:'nearest'});return;
+   }
+   if(e.key==='Enter'&&results.classList.contains('open')){
+    if(matches.length){e.preventDefault();e.stopPropagation();choose(matches[cursor]||matches[0]);}
+   }
+  });
+  input.addEventListener('blur',()=>setTimeout(()=>{
+   close();
+   const chosen=sel.selectedOptions[0];
+   input.value=sel.value?(chosen?.textContent||''):'';
+  },150));
+  const observer=new MutationObserver(()=>{if(document.activeElement!==input){
+   const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';
+  }});
+  observer.observe(sel,{childList:true,subtree:true});
+  sel.addEventListener('change',()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';});
+  window['sync'+id+'QuickSearch']=()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';close()};
+ }
+ ids.forEach(setup);
+ document.addEventListener('pointerdown',e=>{
+  ids.forEach(id=>{const box=document.getElementById(id+'Search')?.parentElement;if(box&&!box.contains(e.target))box.querySelector('.quick-search-results')?.classList.remove('open')});
+ });
+})();
+</script></body>
 </html>
 
 

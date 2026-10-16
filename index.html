@@ -2929,7 +2929,7 @@ document.addEventListener("keydown", function(event){
   }});
   observer.observe(sel,{childList:true,subtree:true});
   sel.addEventListener('change',()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';});
-  window['sync'+id+'QuickSearch']=()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';close()};
+  window['sync'+id.charAt(0).toUpperCase()+id.slice(1)+'QuickSearch']=()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';close()};
  }
  ids.forEach(setup);
  document.addEventListener('pointerdown',e=>{

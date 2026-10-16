@@ -1803,6 +1803,8 @@ window.editTrip=async function(id){
   }
   customerSelect.value=customerId;
   window.syncTripCustomerQuickSearch?.();
+  const customerSearch=document.getElementById("tripCustomerSearch");
+  if(customerSearch)customerSearch.value=trip.customers?.name||customerSelect.selectedOptions[0]?.textContent||"";
   await loadTripItems();
   await loadTripLocations(trip.description||"");
   const itemSelect=document.getElementById("tripItem");
@@ -1815,6 +1817,8 @@ window.editTrip=async function(id){
   }
   itemSelect.value=itemId;
   window.syncTripItemQuickSearch?.();
+  const itemSearch=document.getElementById("tripItemSearch");
+  if(itemSearch)itemSearch.value=trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
   syncVendorRemoveButton();
   updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
@@ -1827,6 +1831,10 @@ window.editTrip=async function(id){
   requestAnimationFrame(()=>{
     window.syncTripCustomerQuickSearch?.();
     window.syncTripItemQuickSearch?.();
+    const c=document.getElementById("tripCustomerSearch");
+    const i=document.getElementById("tripItemSearch");
+    if(c)c.value=trip.customers?.name||customerSelect.selectedOptions[0]?.textContent||"";
+    if(i)i.value=trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
   });
 };
 window.cancelTripEdit=function(){
@@ -2916,7 +2924,7 @@ document.addEventListener("keydown", function(event){
    const chosen=sel.selectedOptions[0];
    input.value=sel.value?(chosen?.textContent||''):'';
   },150));
-  const observer=new MutationObserver(()=>{if(document.activeElement!==input){
+  const observer=new MutationObserver(()=>{if(document.activeElement!==input && !editingTripId){
    const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';
   }});
   observer.observe(sel,{childList:true,subtree:true});

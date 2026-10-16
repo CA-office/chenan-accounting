@@ -403,7 +403,7 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="grid trip-form-grid">
 <div class="form-field"><label for="tripDriver">司機</label><select id="tripDriver"><option value="">請選擇司機</option></select></div>
 <div class="form-field"><label for="tripDate">日期</label><input id="tripDate" type="text" inputmode="numeric" maxlength="10" placeholder="例如：2026/09/06" autocomplete="off"></div>
-<div class="form-field"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
+<div class="form-field" style="display:none" aria-hidden="true"><label for="tripTime">時間</label><input id="tripTime" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="08:00" aria-label="24小時制時間，例如 08:00"><div class="form-hint" style="margin:4px 0 0">24 小時制，可直接輸入 0800、1830，離開欄位後會自動變成 08:00、18:30。</div></div>
 <div class="form-field"><label for="tripCustomer">客戶</label><select id="tripCustomer" onchange="loadTripItems();loadTripLocations();updateSpecialTripFields()"><option value="">請選擇客戶</option></select></div>
 <div class="form-field"><label for="tripItem">廠商</label><div class="select-with-action"><div class="vendor-select-inline"><select id="tripItem" onchange="previewTripPrice();syncVendorRemoveButton()"><option value="">請先選擇客戶</option></select><button id="tripItemRemoveBtn" type="button" class="vendor-remove-btn" title="移除此廠商" aria-label="移除此廠商" onclick="removeSelectedTripVendor()" disabled>×</button></div><button type="button" class="btn-secondary quick-add-item-btn" onclick="openQuickItemModal()">＋ 新增廠商</button></div></div>
 <div class="form-field"><label for="tripDriverFeeInput">運費</label><input id="tripDriverFeeInput" type="number" min="0" step="1" value="0" placeholder="請自行輸入本趟運費"></div>
@@ -1584,17 +1584,32 @@ if(tripTimeInput){
   });
 }
 
-// 日期可直接輸入，格式：YYYY/MM/DD
-document.getElementById("tripDate").addEventListener("input",function(){
-  let v=this.value.replace(/\D/g,"").slice(0,8);
-  if(v.length>4) v=v.slice(0,4)+"/"+v.slice(4);
-  if(v.length>7) v=v.slice(0,7)+"/"+v.slice(7);
-  this.value=v;
+// 日期快速輸入：1001 → 當年度 10/01；亦支援 20261001 與 2026/10/01。
+const tripDateInput=document.getElementById("tripDate");
+tripDateInput.addEventListener("input",function(){
+  const digits=this.value.replace(/\\D/g,"").slice(0,8);
+  if(digits.length===8){
+    this.value=digits.slice(0,4)+"/"+digits.slice(4,6)+"/"+digits.slice(6);
+  }else if(digits.length>4){
+    this.value=digits.slice(0,4)+"/"+digits.slice(4);
+    if(digits.length>6)this.value=digits.slice(0,4)+"/"+digits.slice(4,6)+"/"+digits.slice(6);
+  }else{
+    this.value=digits;
+  }
 });
-document.getElementById("tripDate").addEventListener("blur",function(){
-  if(!this.value.trim())return;
-  const iso=normalizeDate(this.value);
+tripDateInput.addEventListener("blur",function(){
+  let raw=this.value.trim();
+  if(!raw)return;
+  const digits=raw.replace(/\\D/g,"");
+  if(digits.length===4){
+    const year=new Date().getFullYear();
+    raw=`${year}/${digits.slice(0,2)}/${digits.slice(2)}`;
+  }else if(digits.length===8){
+    raw=`${digits.slice(0,4)}/${digits.slice(4,6)}/${digits.slice(6)}`;
+  }
+  const iso=normalizeDate(raw);
   if(iso)this.value=displayDate(iso);
+  else alert("日期不正確，請輸入例如 1001 或 20261001");
 });
 
 

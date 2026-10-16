@@ -1631,6 +1631,7 @@ function stripVehicleMarker(note){
     .replace(/\s*\[\[group_count:([0-9.]+)\]\]\s*/g," ")
     .replace(/\s*\[\[vehicle_type:([^\]]*)\]\]\s*/g," ")
     .replace(/\s*\[\[trip_remark:([^\]]*)\]\]\s*/g," ")
+    .replace(/\s*\[\[temporary_vendor:([^\]]*)\]\]\s*/g," ")
     .trim();
 }
 function getVehicleCountFromNote(note){
@@ -1679,6 +1680,12 @@ function getTripRemarkFromNote(note){
   const m=String(note||"").match(/\[\[trip_remark:([^\]]*)\]\]/);
   return m?decodeTripMarker(m[1]):"";
 }
+function getTemporaryVendor(note){
+ const m=String(note||"").match(/\[\[temporary_vendor:([^\]]*)\]\]/);
+ if(!m)return "";
+ try{return decodeURIComponent(m[1])}catch(e){return m[1]}
+}
+function getTripVendor(t){return getTemporaryVendor(t?.note)||t?.customer_items?.name||""}
 function buildTripStoredNote(existingNote,bigCount,smallCount,warehouseDays,groupCount,vehicleType,tripRemark){
   const clean=stripVehicleMarker(existingNote);
   const big=Number(bigCount||0), small=Number(smallCount||0);
@@ -1739,7 +1746,12 @@ window.saveTrip=async function(){
     trip_time=String(hh).padStart(2,"0")+":"+String(mm).padStart(2,"0");
   }
   const customer_id=document.getElementById("tripCustomer").value;
-  const customer_item_id=document.getElementById("tripItem").value||null;
+  const vendorTyped=document.getElementById("tripItemSearch")?.value.trim()||"";
+  const selectedVendor=document.getElementById("tripItem");
+  const selectedVendorName=selectedVendor.selectedOptions[0]?.textContent.trim()||"";
+  const useExistingVendor=!!selectedVendor.value && vendorTyped===selectedVendorName;
+  const customer_item_id=useExistingVendor?selectedVendor.value:null;
+  const temporaryVendor=useExistingVendor?"":vendorTyped;
   const driver_fee=Number(document.getElementById("tripDriverFeeInput").value||0);
   const description=document.getElementById("tripDescription").value.trim();
   const vehicle_big=Number(document.getElementById("tripVehicleBigCount")?.value||0);
@@ -1749,7 +1761,7 @@ window.saveTrip=async function(){
   const vehicle_type=normalizeVehicleTypeInput(document.getElementById("tripVehicleType")?.value||"");
   const trip_remark=document.getElementById("tripRemark")?.value||"";
   const oldTrip=editingTripId?window._tripCache?.find(t=>String(t.id)===String(editingTripId)):null;
-  const note=buildTripStoredNote(oldTrip?.note||"",vehicle_big,vehicle_small,warehouse_days,group_count,vehicle_type,trip_remark);
+  const note=buildTripStoredNote(oldTrip?.note||"",vehicle_big,vehicle_small,warehouse_days,group_count,vehicle_type,trip_remark)+(temporaryVendor?` [[temporary_vendor:${encodeURIComponent(temporaryVendor)}]]`:"");
   const fuel_cost=Number(document.getElementById("tripFuel").value||0);
   const driver_cash=Number(document.getElementById("tripDriverCash").value||0);
   const item=customerItems.find(i=>String(i.id)===String(customer_item_id));
@@ -1757,7 +1769,7 @@ window.saveTrip=async function(){
   if(!trip_date){alert("日期請輸入正確格式，例如 2026/09/06");return}
   if(trip_time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(trip_time)){alert("時間請輸入 24 小時制，例如 08:00 或 13:30");return}
   if(!customer_id){alert("請選擇客戶");return}
-  if(!customer_item_id||!item){alert("請選擇客戶廠商");return}
+  if(!temporaryVendor && (!customer_item_id||!item)){alert("請選擇或直接輸入廠商");return}
   if(driver_fee<0){alert("司機費不能小於 0");return}
   if(fuel_cost<0){alert("油資不能小於 0");return}
   if(vehicle_big<0||vehicle_small<0){alert("台數不能小於 0");return}
@@ -1809,6 +1821,7 @@ window.editTrip=async function(id){
   await loadTripLocations(trip.description||"");
   const itemSelect=document.getElementById("tripItem");
   const itemId=String(trip.customer_item_id||"");
+  const originalTemporaryVendor=getTemporaryVendor(trip.note);
   if(itemId&&!Array.from(itemSelect.options).some(o=>o.value===itemId)){
     const opt=document.createElement("option");
     opt.value=itemId;
@@ -1818,7 +1831,7 @@ window.editTrip=async function(id){
   itemSelect.value=itemId;
   window.syncTripItemQuickSearch?.();
   const itemSearch=document.getElementById("tripItemSearch");
-  if(itemSearch)itemSearch.value=trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
+  if(itemSearch)itemSearch.value=originalTemporaryVendor||trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
   syncVendorRemoveButton();
   updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
@@ -1834,7 +1847,7 @@ window.editTrip=async function(id){
     const c=document.getElementById("tripCustomerSearch");
     const i=document.getElementById("tripItemSearch");
     if(c)c.value=trip.customers?.name||customerSelect.selectedOptions[0]?.textContent||"";
-    if(i)i.value=trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
+    if(i)i.value=originalTemporaryVendor||trip.customer_items?.name||itemSelect.selectedOptions[0]?.textContent||"";
   });
 };
 window.cancelTripEdit=function(){
@@ -1848,6 +1861,7 @@ window.cancelTripEdit=function(){
   document.getElementById("tripCustomer").value="";
   syncTripCustomerQuickSearch();
   document.getElementById("tripItem").innerHTML='<option value="">請先選擇客戶</option>';
+  const vendorSearch=document.getElementById("tripItemSearch");if(vendorSearch)vendorSearch.value="";
   document.getElementById("tripDescription").innerHTML='<option value="">請先選擇客戶</option>';
   syncLocationRemoveButton();
   document.getElementById("tripDriverCash").value=0;
@@ -2005,7 +2019,7 @@ async function loadTrips(){
     const groupText=groupCount?String(groupCount):"";
     const tonText=formatVehicleTypeTons(getVehicleTypeFromNote(item.note));
     const remarkText=getTripRemarkFromNote(item.note)||stripVehicleMarker(item.note||"");
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(groupText)}</td><td>${safe(tonText)}</td><td>${safe(item.customer_items?.name)}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(remarkText)}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(groupText)}</td><td>${safe(tonText)}</td><td>${safe(getTripVendor(item))}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(remarkText)}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
   if(!window._tripCache.length)list.innerHTML=`<tr><td colspan="15">${recordDate?"這個日期目前沒有趟次紀錄":"這個月份目前沒有趟次紀錄"}</td></tr>`;
@@ -2237,7 +2251,7 @@ async function loadTripSalaryPreview(){
   const rows=(data||[]).map(t=>{
     const qty=Number(t.quantity||0), fee=Number(t.driver_fee||0), cash=Number(t.driver_cash||0), fuel=Number(t.fuel_cost||0);
     const salary=fee*qty;
-    return {date:t.trip_date||"",time:String(t.trip_time||"").slice(0,5),driver:t.employees?.name||"",customer:t.customers?.name||"",item:t.customer_items?.name||"",location:t.description||"",qty,salary,cash,fuel,net:salary-cash-fuel,excluded:!!t.salary_excluded};
+    return {date:t.trip_date||"",time:String(t.trip_time||"").slice(0,5),driver:t.employees?.name||"",customer:t.customers?.name||"",item:getTripVendor(t),location:t.description||"",qty,salary,cash,fuel,net:salary-cash-fuel,excluded:!!t.salary_excluded};
   });
   const included=rows.filter(r=>!r.excluded);
   const excluded=rows.filter(r=>r.excluded);
@@ -2388,7 +2402,7 @@ function showCalendarDetail(t){
   <div class="modal-row"><span>時間</span><span>${safe(t.trip_time||"未排時間")}</span></div>
   <div class="modal-row"><span>司機</span><span>${safe(t.employees?.name)} ${plate?"｜"+safe(plate):""}</span></div>
   <div class="modal-row"><span>客戶</span><span>${safe(t.customers?.name)}</span></div>
-  <div class="modal-row"><span>項目</span><span>${safe(t.customer_items?.name)}</span></div>
+  <div class="modal-row"><span>項目</span><span>${safe(getTripVendor(t))}</span></div>
   <div class="modal-row"><span>地點</span><span>${safe(t.description)}</span></div>
   <div class="modal-row"><span>趟數</span><span>${safe(t.quantity)}</span></div>
   <div class="modal-row"><span>備註</span><span>${safe(stripVehicleMarker(t.note))}</span></div>`;
@@ -2907,7 +2921,7 @@ document.addEventListener("keydown", function(event){
    }
   }
   input.addEventListener('focus',refresh);
-  input.addEventListener('input',refresh);
+  input.addEventListener('input',()=>{if(id==='tripItem')sel.value='';refresh()});
   input.addEventListener('keydown',e=>{
    if(e.key==='Escape'){close();return}
    if(e.key==='ArrowDown'||e.key==='ArrowUp'){
@@ -2917,19 +2931,20 @@ document.addEventListener("keydown", function(event){
    }
    if(e.key==='Enter'&&results.classList.contains('open')){
     if(matches.length){e.preventDefault();e.stopPropagation();choose(matches[cursor]||matches[0]);}
+    else if(id==='tripItem'){e.preventDefault();e.stopPropagation();close();}
    }
   });
   input.addEventListener('blur',()=>setTimeout(()=>{
    close();
    const chosen=sel.selectedOptions[0];
-   input.value=sel.value?(chosen?.textContent||''):'';
+   if(id!=='tripItem'||sel.value)input.value=sel.value?(chosen?.textContent||''):'';
   },150));
   const observer=new MutationObserver(()=>{if(document.activeElement!==input && !editingTripId){
-   const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';
+   const chosen=sel.selectedOptions[0];if(id!=='tripItem'||sel.value)input.value=sel.value?(chosen?.textContent||''):'';
   }});
   observer.observe(sel,{childList:true,subtree:true});
-  sel.addEventListener('change',()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';});
-  window['sync'+id.charAt(0).toUpperCase()+id.slice(1)+'QuickSearch']=()=>{const chosen=sel.selectedOptions[0];input.value=sel.value?(chosen?.textContent||''):'';close()};
+  sel.addEventListener('change',()=>{const chosen=sel.selectedOptions[0];if(id!=='tripItem'||sel.value)input.value=sel.value?(chosen?.textContent||''):'';});
+  window['sync'+id.charAt(0).toUpperCase()+id.slice(1)+'QuickSearch']=()=>{const chosen=sel.selectedOptions[0];if(id!=='tripItem'||sel.value)input.value=sel.value?(chosen?.textContent||''):'';close()};
  }
  ids.forEach(setup);
  document.addEventListener('pointerdown',e=>{

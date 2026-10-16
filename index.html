@@ -1792,18 +1792,42 @@ window.editTrip=async function(id){
   document.getElementById("tripGroupCount").value=getGroupCountFromNote(trip.note)||"";
   document.getElementById("tripVehicleType").value=normalizeVehicleTypeInput(getVehicleTypeFromNote(trip.note)||"");
   document.getElementById("tripRemark").value=getTripRemarkFromNote(trip.note)||"";
-  document.getElementById("tripCustomer").value=trip.customer_id;
-  syncTripCustomerQuickSearch();
+  // 修改時先還原原始客戶與廠商；即使選項未載入或已停用，也不能顯示空白。
+  const customerSelect=document.getElementById("tripCustomer");
+  const customerId=String(trip.customer_id||"");
+  if(customerId&&!Array.from(customerSelect.options).some(o=>o.value===customerId)){
+    const opt=document.createElement("option");
+    opt.value=customerId;
+    opt.textContent=trip.customers?.name||trip.customer_name||"原客戶";
+    customerSelect.appendChild(opt);
+  }
+  customerSelect.value=customerId;
+  window.syncTripCustomerQuickSearch?.();
   await loadTripItems();
   await loadTripLocations(trip.description||"");
-  document.getElementById("tripItem").value=trip.customer_item_id||"";
-  syncTripItemQuickSearch();
+  const itemSelect=document.getElementById("tripItem");
+  const itemId=String(trip.customer_item_id||"");
+  if(itemId&&!Array.from(itemSelect.options).some(o=>o.value===itemId)){
+    const opt=document.createElement("option");
+    opt.value=itemId;
+    opt.textContent=trip.customer_items?.name||trip.item_name||"原廠商";
+    itemSelect.appendChild(opt);
+  }
+  itemSelect.value=itemId;
+  window.syncTripItemQuickSearch?.();
   syncVendorRemoveButton();
   updateSpecialTripFields();
   document.getElementById("tripDriverFeeInput").value=Number(trip.driver_fee||0)*Number(trip.quantity||1);
   document.getElementById("tripDriverCash").value=Number(trip.driver_cash||0);
   previewTripPrice();
-  document.getElementById("trips").scrollIntoView({behavior:"smooth"});
+  // 直接定位到編輯表單，而不是整個「趟次」分頁的頂端。
+  const formTitle=document.getElementById("tripFormTitle");
+  formTitle?.closest(".card")?.scrollIntoView({behavior:"smooth",block:"start"});
+  // 等客戶／廠商選項重新載入完成後同步搜尋輸入框。
+  requestAnimationFrame(()=>{
+    window.syncTripCustomerQuickSearch?.();
+    window.syncTripItemQuickSearch?.();
+  });
 };
 window.cancelTripEdit=function(){
   editingTripId=null;

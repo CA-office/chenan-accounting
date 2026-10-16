@@ -475,7 +475,7 @@ input[type="number"]::-webkit-inner-spin-button{
 <div class="form-field"><label for="tripRecordDate">日期</label><input id="tripRecordDate" type="date" onchange="syncTripRecordDateFilter()"></div>
 </div>
 <div class="table-wrap"><table><thead><tr>
-<th>日期</th><th>時間</th><th>司機</th><th>客戶</th><th>台數</th><th>寄倉天數</th><th>組數</th><th>噸數</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>備註</th><th>操作</th>
+<th>日期</th><th>司機</th><th>客戶</th><th>台數</th><th>寄倉天數</th><th>組數</th><th>噸數</th><th>廠商</th><th>地點</th><th>運費</th><th>收現</th><th>油資</th><th>備註</th><th>操作</th>
 </tr></thead><tbody id="tripList"></tbody></table></div>
 </div>
 </section>
@@ -2019,10 +2019,10 @@ async function loadTrips(){
     const groupText=groupCount?String(groupCount):"";
     const tonText=formatVehicleTypeTons(getVehicleTypeFromNote(item.note));
     const remarkText=getTripRemarkFromNote(item.note)||stripVehicleMarker(item.note||"");
-    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.trip_time||"未排時間")}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(groupText)}</td><td>${safe(tonText)}</td><td>${safe(getTripVendor(item))}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(remarkText)}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
+    row.innerHTML=`<td>${safe(item.trip_date)}</td><td>${safe(item.employees?.name)}</td><td>${safe(item.customers?.name)}</td><td>${safe(vehicleText)}</td><td>${safe(warehouseText)}</td><td>${safe(groupText)}</td><td>${safe(tonText)}</td><td>${safe(getTripVendor(item))}</td><td>${safe(item.description)}</td><td>${money(gross)}</td><td>${money(Number(item.driver_cash||0))}</td><td>${money(Number(item.fuel_cost||0))}</td><td>${safe(remarkText)}</td><td><div class="actions"><button class="btn-secondary" onclick="editTrip(${item.id})">修改</button><button class="btn-danger" onclick="deleteTrip(${item.id})">刪除</button></div></td>`;
     list.appendChild(row);
   });
-  if(!window._tripCache.length)list.innerHTML=`<tr><td colspan="15">${recordDate?"這個日期目前沒有趟次紀錄":"這個月份目前沒有趟次紀錄"}</td></tr>`;
+  if(!window._tripCache.length)list.innerHTML=`<tr><td colspan="14">${recordDate?"這個日期目前沒有趟次紀錄":"這個月份目前沒有趟次紀錄"}</td></tr>`;
   await loadTripRecordSalarySummary(month,driverId);
   await loadSalaryExclusionCustomersForMonth(month);
   await loadTripRecordSalaryExclusionCustomers();

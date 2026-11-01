@@ -980,9 +980,20 @@ window.login=async function(){
   msg.textContent="登入中…";
   msg.className="message";
 
-  const {error}=await client.auth.signInWithPassword({email,password});
+  let signInResult;
+  try {
+    signInResult=await client.auth.signInWithPassword({email,password});
+  } catch(err) {
+    msg.textContent="無法連線到登入伺服器。請確認網路連線，並檢查瀏覽器是否封鎖 supabase.co；這不是密碼錯誤。詳細訊息："+(err?.message||String(err));
+    msg.className="message error";
+    return;
+  }
+  const {error}=signInResult;
   if(error){
-    msg.textContent="登入失敗："+error.message;
+    const networkError=/failed to fetch|network|fetch failed|load failed/i.test(error.message||"");
+    msg.textContent=networkError
+      ? "無法連線到登入伺服器（Failed to fetch）。請檢查網路、瀏覽器擴充功能或 Supabase 服務狀態；不代表密碼錯誤。"
+      : "登入失敗："+error.message;
     msg.className="message error";
     return;
   }
